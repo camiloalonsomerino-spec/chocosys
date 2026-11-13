@@ -1,0 +1,37 @@
+# Acción estándar (sprint 23). Una etapa de receta la usa con «accion: guardar-en-trabajo» y «parametros:».
+# Una copia de este archivo en <datos>\acciones\ manda sobre esta. Forma de la instrucción: ver enviar-correo.yaml.
+nombre: Guardar en la carpeta del trabajo
+descripcion: Copia o mueve archivos a una subcarpeta de la carpeta del trabajo, sin pisar lo que ya está
+sale: false
+modelo: haiku
+esfuerzo: medium
+traspaso: context/GUARDADO.md
+parametros:
+  archivos:
+    obligatorio: true
+    tipo: lista
+    ayuda: Rutas de los archivos (relativas a la carpeta del flujo o absolutas), una por línea o separadas por punto y coma
+  subcarpeta:
+    obligatorio: true
+    ayuda: La subcarpeta dentro de la carpeta del trabajo, por ejemplo 02-ENTREGABLES
+  nombre:
+    ayuda: Nombre nuevo del archivo, solo si se guarda uno
+  mover:
+    tipo: si-no
+    defecto: no
+    ayuda: «sí» mueve (el original deja de estar donde estaba); «no» copia
+    textos:
+      si: muévelos (el original deja de estar donde estaba), y borra cada original solo después de comprobar que su copia quedó con el mismo tamaño
+      'no': cópialos (el original queda donde está)
+  ademas:
+    ayuda: Instrucción extra que se suma al final
+instruccion: |
+  Guarda en la carpeta del trabajo {carpeta}, dentro de su subcarpeta {p:subcarpeta} (créala si no existe; nunca
+  escribas fuera de {carpeta}), estos archivos (una ruta relativa se lee desde {carpeta}): {p:archivos}. Cada
+  archivo queda directo en {carpeta}\{p:subcarpeta}, solo con su nombre, sin las carpetas de su ruta de origen.
+  Modo: {p:mover}.[[ Nombre del archivo guardado: {p:nombre}.]]
+  Si un archivo no está, sigue con los demás y anótalo. Si en el destino ya hay uno con el mismo nombre, no lo pises:
+  agrega -2, -3 antes de la extensión y anótalo. No abras ni cambies el contenido de los archivos.
+  Deja en {carpeta}\{traspaso} (en la carpeta del trabajo, no en la subcarpeta) una línea por archivo: de dónde, a
+  dónde, copiado o movido, y los que no se encontraron.
+  [[Además: {p:ademas}]]

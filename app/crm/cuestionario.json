@@ -1,0 +1,39 @@
+{
+  "titulo": "¿Cómo funciona tu negocio?",
+  "nota": "Ocho preguntas para recomendar el embudo que más se parece al tuyo. Las respuestas no salen de este equipo.",
+  "preguntas": [
+    { "id": "que_vende", "texto": "¿Qué vendes principalmente?", "opciones": [
+      { "id": "productos", "texto": "Productos" },
+      { "id": "servicios", "texto": "Servicios o asesorías" },
+      { "id": "proyectos", "texto": "Proyectos a medida (diseñar, fabricar, instalar)" },
+      { "id": "cursos", "texto": "Cursos, membresías o suscripciones" } ] },
+    { "id": "cliente", "texto": "¿A quién le vendes?", "opciones": [
+      { "id": "empresas", "texto": "A empresas" },
+      { "id": "personas", "texto": "A personas" },
+      { "id": "ambos", "texto": "A los dos" },
+      { "id": "interno", "texto": "Son encargos internos (el cliente es el mismo negocio)" } ] },
+    { "id": "cotiza", "texto": "¿Cada venta lleva una cotización o propuesta?", "opciones": [
+      { "id": "si", "texto": "Sí, cada una se cotiza" },
+      { "id": "no", "texto": "No, el precio es fijo" } ] },
+    { "id": "terreno", "texto": "¿Hay que ir, instalar o entregar algo físico?", "opciones": [
+      { "id": "si", "texto": "Sí" },
+      { "id": "no", "texto": "No" } ] },
+    { "id": "cobro", "texto": "¿Cómo cobras?", "opciones": [
+      { "id": "unico", "texto": "Una vez por venta o trabajo" },
+      { "id": "recurrente", "texto": "De forma recurrente (mensual, anual)" } ] },
+    { "id": "llegada", "texto": "¿Por dónde llega el cliente?", "opciones": [
+      { "id": "directo", "texto": "Contacto directo o referidos" },
+      { "id": "web", "texto": "La web o las redes sociales" },
+      { "id": "licitaciones", "texto": "Licitaciones o compras públicas" } ] },
+    { "id": "ciclo", "texto": "Desde el primer contacto, ¿cuánto tarda en comprar?", "opciones": [
+      { "id": "dias", "texto": "Días" },
+      { "id": "semanas", "texto": "Semanas" },
+      { "id": "meses", "texto": "Meses" } ] },
+    { "id": "documentos", "texto": "¿Qué documentos pides o emites?", "multiple": true, "opciones": [
+      { "id": "cotizacion", "texto": "Cotización" },
+      { "id": "orden_compra", "texto": "Orden de compra" },
+      { "id": "contrato", "texto": "Contrato" },
+      { "id": "factura", "texto": "Factura o boleta" },
+      { "id": "acta_entrega", "texto": "Acta o certificado de entrega" } ] }
+  ]
+}

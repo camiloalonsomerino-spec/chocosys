@@ -1,0 +1,29 @@
+{
+  "id": "infoproducto-suscripcion",
+  "nombre": "Embudo digital y suscripciones",
+  "descripcion": "La persona llega por la web o redes, deja su correo, compra por primera vez y, si sigue, se vuelve recurrente.",
+  "inspirado_en": "Los embudos de systeme.io (página de captura → lista de correo → venta → membresía) y el ciclo de vida de contactos de HubSpot (Lead → Subscriber → Customer)",
+  "embudo": "Embudo digital",
+  "etapas": [
+    { "nombre": "Lead", "tipo": "abierta", "probabilidad": 5, "requisitos": [] },
+    { "nombre": "Suscriptor", "tipo": "abierta", "probabilidad": 15, "requisitos": [
+      { "tipo": "dato", "clave": "contacto_id", "texto": "Contacto con correo" } ] },
+    { "nombre": "Cliente", "tipo": "abierta", "probabilidad": 70, "requisitos": [
+      { "tipo": "dato", "clave": "monto", "texto": "Monto de la primera compra" } ] },
+    { "nombre": "Recurrente", "tipo": "ganada", "probabilidad": 100, "requisitos": [] },
+    { "nombre": "Baja", "tipo": "perdida", "probabilidad": 0, "requisitos": [] }
+  ],
+  "reglas": [
+    { "rotulo": "Lead sin suscribir", "condicion": "etapa_quieta", "etapa": "Lead", "dias": 3 },
+    { "rotulo": "Suscriptor sin comprar", "condicion": "etapa_quieta", "etapa": "Suscriptor", "dias": 14 },
+    { "rotulo": "Cliente sin segunda compra", "condicion": "etapa_quieta", "etapa": "Cliente", "dias": 30 }
+  ],
+  "perfil": [
+    { "p": "que_vende", "o": "cursos", "pts": 4, "razon": "Vendes cursos, membresías o suscripciones." },
+    { "p": "cliente", "o": "personas", "pts": 2, "razon": "Le vendes a personas, de a muchas." },
+    { "p": "cobro", "o": "recurrente", "pts": 3, "razon": "El cobro es recurrente: importa quién sigue y quién se va." },
+    { "p": "llegada", "o": "web", "pts": 3, "razon": "Los clientes llegan por la web o redes: el embudo empieza en una página." },
+    { "p": "cotiza", "o": "no", "pts": 2, "razon": "Precio fijo, sin cotización." },
+    { "p": "ciclo", "o": "dias", "pts": 1, "razon": "La decisión de compra toma días." }
+  ]
+}

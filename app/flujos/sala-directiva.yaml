@@ -1,0 +1,143 @@
+# Sala directiva completa (sprint 7, 20-10-2026): los 6 asientos y 3 rondas. Solo a pedido: abre 22 sesiones Opus.
+# La carpeta de la corrida la arma «Llevar a la sala» en el CRM. El método está en la skill sala-directiva.
+# Sin «entorno:» a propósito: ver sala-rapida.yaml.
+# Sprint 27 (22-10-2026): igual que la rápida, el Presidente escribe el expediente y es el único que lee el SKILL.md,
+# DECISION.md y CONTEXTO.md; a los asientos el motor les pega lo que necesitan ({incluir:ruta}), con topes por etapa.
+nombre: Sala directiva completa
+descripcion: Seis asesores que se confrontan en tres rondas, una puerta y el veredicto
+grupo: Decisiones
+buscar_en: {salas}
+skill: sala-directiva
+contexto: >
+  Eres parte de la sala directiva de {nombre}. Trabajas en {carpeta}: no escribas nada fuera de ella y no ejecutes,
+  envíes ni muevas nada. Español de Chile, directo; cada cifra con el archivo o dato de donde sale, y lo que no viene
+  del material, marcado (supuesto). Habla como asiento, nunca como la persona famosa de tu marco.
+etapas:
+  - nombre: Presidente · resumen
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    traspaso: RESUMEN.md
+    tope_palabras: 450
+    instruccion: >
+      Eres el Presidente de la sala: no opinas ni votas. Lee el método en {skill_sala}\SKILL.md y, en la carpeta de la
+      sala, DECISION.md, CONTEXTO.md y ASIENTOS.md. Escribe {traspaso}, que es el expediente del caso: los asientos no
+      leen CONTEXTO.md ni DECISION.md, solo esto. Va con el paso 1 del método: la decisión en una línea, sus opciones A,
+      B y C (una siempre es no hacerlo y, si {nombre} trae una sola idea, otra es su versión chica), lo que está en juego,
+      los recursos, qué es éxito, hacia dónde se inclina {nombre} y por qué, las cifras que la decisión necesita (cada
+      una con su fuente en CONTEXTO.md: la sección o el dato) y al final la sección Pesos con el peso de 1 a 3 de cada
+      asiento de ASIENTOS.md y una línea de motivo. En 450 palabras como máximo, pesos incluidos.
+  - nombre: Ronda 1 a ciegas
+    agentes: 6
+    paralelo: true
+    modelo: opus
+    esfuerzo: medium
+    solo_lectura: true
+    traspaso: r1/asiento-{i}.md
+    tope_palabras: 300
+    instruccion: >
+      Eres el asiento {i} de {n} y defiendes lo que tu asiento cuida, aunque choque con los demás. Tu perfil y el
+      expediente del caso van pegados al final: no abras perfiles/, RESUMEN.md, CONTEXTO.md, DECISION.md ni el método
+      (si en vez del texto dice «lee el archivo», ese sí lo lees). Si tu perfil manda leer algo que el expediente no
+      trae, lee como máximo un archivo. Esta ronda es a ciegas: no abras nada de r1/, r2/ ni r3/. Escribe {traspaso} de
+      una vez con Write, con la tarjeta de la ronda 1 del método en hasta 300 palabras: asiento, postura, nota de 0 a 10
+      por opción, nota de tu pilar, confianza 1 a 5, ruina (probable, posible o no), puerta (un sentido o dos), tres
+      argumentos con su marco y su fuente, tu contrapeso aplicado a este caso, qué te haría cambiar de opinión, qué
+      harías esta semana y una pregunta para {nombre}.
+      Tu perfil: {incluir:perfiles/{i}.md}
+      El expediente: {incluir:RESUMEN.md}
+  - nombre: Presidente · puntos de quiebre
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    traspaso: QUIEBRES.md
+    tope_palabras: 400
+    instruccion: >
+      Eres el Presidente: no opinas. El expediente y las tarjetas de la ronda 1 van pegados al final; no los vuelvas a
+      abrir (si en vez del texto dice «lee el archivo», ese sí lo lees). Escribe {traspaso} de una vez con Write, en
+      hasta 400 palabras, con 1 a 3 puntos de quiebre (de hechos, de números o de valores), cada uno con quién está en
+      cada lado, y el control de unanimidad del método: si todos prefieren la misma opción con notas a 1 punto o menos,
+      convierte la mejor alternativa no discutida en punto de quiebre y nombra qué asientos deben defenderla en la
+      ronda 2.
+      El expediente: {incluir:RESUMEN.md}
+      Las tarjetas de la ronda 1: {incluir:r1/asiento-*.md}
+  - nombre: Ronda 2 debate
+    agentes: 6
+    paralelo: true
+    modelo: opus
+    esfuerzo: medium
+    solo_lectura: true
+    traspaso: r2/asiento-{i}.md
+    tope_palabras: 250
+    instruccion: >
+      Eres el asiento {i} de {n}. Tu perfil, el expediente, los puntos de quiebre y las tarjetas de la ronda 1 de todos
+      (la tuya es r1/asiento-{i}.md) van pegados al final: no los vuelvas a abrir ni leas otros archivos del caso (si en
+      vez del texto dice «lee el archivo», ese sí lo lees). Escribe {traspaso} de una vez con Write, en hasta 250
+      palabras: con quién discrepas más y por qué (cita su archivo), qué concedes, qué dices de cada punto de quiebre,
+      tus notas nuevas por opción y de tu pilar, confianza, ruina y puerta, si te moviste y por qué, y hasta 3
+      condiciones verificables para decir que sí. Solo te mueves ante un argumento o un dato mejor. Si tu perfil te da
+      veto y corresponde, escribe la línea VETO: el compromiso que lo impide, con su fecha de término.
+      Tu perfil: {incluir:perfiles/{i}.md}
+      El expediente: {incluir:RESUMEN.md}
+      Los puntos de quiebre: {incluir:QUIEBRES.md}
+      Las tarjetas de la ronda 1: {incluir:r1/asiento-*.md}
+  - nombre: Presidente · borrador
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    traspaso: BORRADOR.md
+    instruccion: >
+      Eres el Presidente: no opinas y pesas argumentos, no cabezas. El expediente, los puntos de quiebre y las tarjetas
+      de la ronda 2 van pegados al final; no los vuelvas a abrir (si en vez del texto dice «lee el archivo», ese sí lo
+      lees). Escribe {traspaso} de una vez con Write: la recomendación (opción y etiqueta tentativa), las condiciones
+      fundidas (si dos asientos piden cifras distintas, elige una y di de quién), los pasos con dueño y fecha, la prueba
+      más barata y los criterios para matar la idea.
+      El expediente: {incluir:RESUMEN.md}
+      Los puntos de quiebre: {incluir:QUIEBRES.md}
+      Las tarjetas de la ronda 2: {incluir:r2/asiento-*.md}
+  - nombre: Ronda 3 ratificación
+    agentes: 6
+    paralelo: true
+    modelo: opus
+    esfuerzo: medium
+    solo_lectura: true
+    traspaso: r3/asiento-{i}.md
+    tope_palabras: 120
+    instruccion: >
+      Eres el asiento {i} de {n}. Tu perfil, el expediente, tu tarjeta de la ronda 2 y el borrador del Presidente van
+      pegados al final: no los vuelvas a abrir ni leas otros archivos del caso (si en vez del texto dice «lee el
+      archivo», ese sí lo lees). Escribe {traspaso} de una vez con Write, en hasta 120 palabras: voto (respaldo,
+      respaldo con enmienda o disidencia), tus notas finales por opción y de tu pilar, tu enmienda o disidencia y una
+      línea para {nombre}.
+      Tu perfil: {incluir:perfiles/{i}.md}
+      El expediente: {incluir:RESUMEN.md}
+      Tu tarjeta de la ronda 2: {incluir:r2/asiento-{i}.md}
+      El borrador: {incluir:BORRADOR.md}
+  - puerta: Antes del veredicto
+    critica: true
+  - nombre: Presidente · veredicto
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    traspaso: VEREDICTO.json
+    tope_palabras: 700
+    tope_archivo: VEREDICTO.md
+    tope_detalle: VEREDICTO-DETALLE.md
+    instruccion: >
+      Eres el Presidente: no votas y pesas argumentos, no cabezas. Lee el método en {skill_sala}\SKILL.md. El
+      expediente (con los pesos), los puntos de quiebre, el borrador y las tarjetas de la ronda 3 van pegados al final;
+      no los vuelvas a abrir (si en vez del texto dice «lee el archivo», ese sí lo lees). Si falta la tarjeta de la
+      ronda 3 de un asiento, usa la suya de r2/ y dilo en la disidencia. Adopta una enmienda si nadie la objetó; si
+      chocan, gana la mejor argumentada y la otra va a la minoría. Calcula la nota de cada opción con la cuenta a la
+      vista, la banda, la dispersión y la confianza, y aplica los frenos del método (ruina, regla de Bezos, unanimidad y
+      veto de Tu tiempo), declarando cuál se aplicó. Escribe VEREDICTO.md con las secciones fijas del método en menos
+      de 700 palabras; lo que no quepa (la cuenta completa, el detalle de cada asiento) va a VEREDICTO-DETALLE.md.
+      Termina con {traspaso}: solo el JSON válido del método, sin texto antes ni después.
+      El expediente: {incluir:RESUMEN.md}
+      Los puntos de quiebre: {incluir:QUIEBRES.md}
+      El borrador: {incluir:BORRADOR.md}
+      Las tarjetas de la ronda 3: {incluir:r3/asiento-*.md}

@@ -1,0 +1,19 @@
+# Receta de prueba: muestra etapas en paralelo, una puerta y el traspaso por archivos.
+nombre: Prueba · tres agentes
+descripcion: Tres escriben en paralelo, una puerta, uno junta
+grupo: Pruebas
+etapas:
+  - nombre: Escribir
+    agentes: 3
+    paralelo: true
+    traspaso: context/parte-{i}.md
+    instruccion: >
+      Escribe un haiku en español sobre el agua que corre por una cañería (versión {i} de {n})
+      y guárdalo en {traspaso}. No hagas nada más.
+  - puerta: Revisar los tres antes de juntarlos
+  - nombre: Juntar
+    agentes: 1
+    traspaso: context/juntos.md
+    instruccion: >
+      Lee los archivos context/parte-*.md, júntalos en {traspaso} bajo el título «Tres haikus»
+      y termina.

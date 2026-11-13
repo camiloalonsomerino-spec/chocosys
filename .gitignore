@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+# Datos de prueba y reportes: nunca al repositorio.
+datos-prueba/
+**/reportes/
+*.mp4
+*.mov
+*.zip

@@ -1,0 +1,46 @@
+# Acción estándar (sprint 23). Una etapa de receta la usa con «accion: enviar-correo» y «parametros:».
+# Una copia de este archivo en <datos>\acciones\ manda sobre esta. En la instrucción, {p:x} es el valor del parámetro x
+# y lo que va entre [[ ]] desaparece si alguno de sus parámetros quedó vacío. {carpeta}, {traspaso} y {fecha} los pone
+# el motor al abrir la etapa, como en cualquier receta.
+nombre: Enviar correo
+descripcion: Envía un correo con adjuntos siguiendo la skill de envío; prepara y revisa antes de enviar, y deja en el traspaso lo que respondió el servidor
+sale: true
+modelo: opus
+esfuerzo: medium
+traspaso: context/CORREO.md
+parametros:
+  para:
+    obligatorio: true
+    ayuda: Uno o más correos, separados por coma
+  asunto:
+    obligatorio: true
+    ayuda: El asunto, tal cual
+  cuerpo:
+    obligatorio: true
+    ayuda: El texto del correo o la ruta de un archivo del flujo que lo trae (por ejemplo, el traspaso de la etapa anterior)
+  adjuntos:
+    tipo: lista
+    ayuda: Rutas de los archivos que van adjuntos, una por línea o separadas por punto y coma
+  copia:
+    ayuda: Correos en copia, separados por coma
+  motivo:
+    ayuda: Para qué sale este correo (lo lee la sesión, no va en el correo)
+  desde:
+    ayuda: La cuenta desde la que sale, si hay más de una
+  skill:
+    defecto: enviar-y-subir
+    ayuda: La skill que dice cómo se envía en este computador
+  ademas:
+    ayuda: Instrucción extra que se suma al final (por ejemplo, otro script de envío)
+instruccion: |
+  Envía un correo siguiendo la skill {p:skill}: léela antes y haz lo que dice para preparar, adjuntar y verificar.
+  Para: {p:para}.[[ Copia: {p:copia}.]][[ Desde: {p:desde}.]] Asunto: «{p:asunto}».
+  Cuerpo: {p:cuerpo} (si es la ruta de un archivo, el texto es el de ese archivo, tal cual).
+  [[Adjuntos: {p:adjuntos}.]][[ Motivo: {p:motivo}.]]
+  Primero prepara el correo completo sin enviarlo (o con el modo de simulación de la herramienta, si lo tiene) y revisa
+  que el destinatario, la copia, el asunto y cada adjunto sean exactamente esos. No sumes destinatarios ni cambies el
+  texto. Si algo no calza o falta un adjunto, no envíes: anótalo en {carpeta}\{traspaso} y termina. Recién entonces envía, una sola
+  vez; si después no queda claro si salió, no lo reenvíes: anótalo.
+  Deja en {carpeta}\{traspaso}: para, copia, asunto, cada adjunto con su ruta, la hora y lo que respondió el servidor o la página.
+  «Enviado» significa que el servidor lo aceptó, no que llegó; sin respuesta del servidor escribe «sin confirmar».
+  [[Además: {p:ademas}]]

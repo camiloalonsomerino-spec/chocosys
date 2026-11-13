@@ -1,0 +1,34 @@
+# Segunda opinión exprés (sprint 10, 21-10-2026): una sola sesión hace hablar a los asientos, los confronta y entrega el
+# veredicto. Es la de por defecto del botón «Segunda opinión», para las profundidades «opinión» y «plan de acción».
+# Sin puerta: no ejecuta, no envía ni mueve nada; solo opina. La carpeta la arma «Segunda opinión» (DECISION.md,
+# CONTEXTO.md, perfiles\1..n.md, ASIENTOS.md, sala.json). Sin «entorno:» por lo mismo que la rápida.
+nombre: Segunda opinión exprés
+descripcion: Una sesión da voz a cada asesor, los confronta y entrega el veredicto (opinión o plan de acción)
+grupo: Decisiones
+buscar_en: {salas}
+skill: sala-directiva
+contexto: >
+  Eres el Presidente de la sala directiva de {nombre}, en su versión exprés. El método está en
+  {skill_sala}\SKILL.md (secciones «Segunda opinión exprés» y «Puntaje, bandas y frenos»). La
+  pregunta y la profundidad pedida están en DECISION.md, el contexto en CONTEXTO.md y los asientos en ASIENTOS.md, todos en
+  {carpeta}. No escribas nada fuera de {carpeta} y no ejecutes, envíes ni muevas nada. Español de Chile, directo; cada cifra con
+  el archivo o dato de donde sale, y lo que no viene del material, marcado (supuesto). Los asientos hablan como asiento, nunca
+  como la persona famosa de su marco.
+etapas:
+  - nombre: Directorio · segunda opinión
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    traspaso: VEREDICTO.json
+    # Sprint 27 (22-10-2026, D10): solo el tope del veredicto; sobre 700 se reescribe una vez y el detalle se separa.
+    tope_palabras: 700
+    tope_archivo: VEREDICTO.md
+    tope_detalle: VEREDICTO-DETALLE.md
+    instruccion: >
+      Lee el SKILL.md de la sala, DECISION.md, CONTEXTO.md, ASIENTOS.md y los perfiles de perfiles/. Corre la versión exprés
+      del método: escribe DELIBERACION.md con el resumen y los pesos, una tarjeta por asiento (como si no hubieras leído las
+      anteriores) y el choque. Después calcula el veredicto con la cuenta a la vista, la banda y los frenos, y escribe
+      VEREDICTO.md según la profundidad de DECISION.md (opinión: hasta 350 palabras y como máximo 2 pasos; plan de acción:
+      un plan de 3 a 6 pasos con dueño y fecha, la prueba más barata y cuándo matar la idea). Termina con {traspaso}: solo el
+      JSON válido del método, con el campo "profundidad", sin texto antes ni después.

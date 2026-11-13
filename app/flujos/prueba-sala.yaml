@@ -1,0 +1,84 @@
+# Prueba barata de la sala directiva (sprint 7, 20-10-2026): el mismo circuito que la rápida, en Haiku, con 2 asientos
+# y sin puerta, para revisar que todo llega al veredicto sin gastar Opus. No sirve para decidir nada.
+# Sprint 27 (22-10-2026): con el expediente del Presidente, los archivos pegados ({incluir:ruta}) y los topes de
+# palabras, como la rápida; los topes son los cortos de esta prueba, y un Haiku que se pasa prueba la reescritura.
+nombre: Prueba de la sala
+descripcion: El circuito de la sala en Haiku, 2 asientos y sin puerta (solo para probar)
+grupo: Pruebas
+buscar_en: {salas}
+skill: sala-directiva
+contexto: >
+  Esto es una PRUEBA del circuito de la sala directiva de {nombre}: respuestas cortas. Trabajas en {carpeta}: no
+  escribas nada fuera de ella y no ejecutes, envíes ni muevas nada.
+etapas:
+  - nombre: Presidente · resumen
+    agentes: 1
+    modelo: haiku
+    esfuerzo: low
+    solo_lectura: true
+    traspaso: RESUMEN.md
+    tope_palabras: 150
+    instruccion: >
+      Eres el Presidente: no opinas. Lee el método en {skill_sala}\SKILL.md y, en la carpeta de la sala, DECISION.md,
+      CONTEXTO.md y ASIENTOS.md. Escribe {traspaso}, el expediente que leen los asientos, en hasta 150 palabras: la
+      decisión, opciones A, B y C (una es no hacerlo), dos cifras con su fuente en CONTEXTO.md y una sección Pesos con
+      el peso de 1 a 3 de cada asiento de ASIENTOS.md.
+  - nombre: Ronda 1 a ciegas
+    agentes: 2
+    paralelo: true
+    modelo: haiku
+    esfuerzo: low
+    solo_lectura: true
+    traspaso: r1/asiento-{i}.md
+    tope_palabras: 100
+    instruccion: >
+      Eres el asiento {i} de {n}. Tu perfil y el expediente van pegados al final: no abras otros archivos (si en vez
+      del texto dice «lee el archivo», ese sí lo lees) y no abras r1/. Escribe {traspaso} de una vez con Write, en hasta
+      100 palabras: asiento, postura, nota de 0 a 10 por opción, ruina (probable, posible o no), puerta (un sentido o
+      dos) y un argumento con su marco.
+      Tu perfil: {incluir:perfiles/{i}.md}
+      El expediente: {incluir:RESUMEN.md}
+  - nombre: Presidente · puntos de quiebre
+    agentes: 1
+    modelo: haiku
+    esfuerzo: low
+    solo_lectura: true
+    traspaso: QUIEBRES.md
+    tope_palabras: 100
+    instruccion: >
+      Eres el Presidente. Las tarjetas de la ronda 1 van pegadas al final; no las vuelvas a abrir. Escribe {traspaso}
+      de una vez con Write, en hasta 100 palabras, con 1 punto de quiebre y quién está en cada lado.
+      Las tarjetas de la ronda 1: {incluir:r1/asiento-*.md}
+  - nombre: Ronda 2 debate
+    agentes: 2
+    paralelo: true
+    modelo: haiku
+    esfuerzo: low
+    solo_lectura: true
+    traspaso: r2/asiento-{i}.md
+    tope_palabras: 100
+    instruccion: >
+      Eres el asiento {i} de {n}. Tu perfil, el punto de quiebre y las tarjetas de la ronda 1 van pegados al final; no
+      los vuelvas a abrir. Escribe {traspaso} de una vez con Write, en hasta 100 palabras: con quién discrepas, tus notas
+      nuevas por opción y si te moviste.
+      Tu perfil: {incluir:perfiles/{i}.md}
+      El punto de quiebre: {incluir:QUIEBRES.md}
+      Las tarjetas de la ronda 1: {incluir:r1/asiento-*.md}
+  - nombre: Presidente · veredicto
+    agentes: 1
+    modelo: haiku
+    esfuerzo: low
+    solo_lectura: true
+    traspaso: VEREDICTO.json
+    tope_palabras: 700
+    tope_archivo: VEREDICTO.md
+    tope_detalle: VEREDICTO-DETALLE.md
+    instruccion: >
+      Eres el Presidente. El expediente (con los pesos) y las tarjetas de la ronda 2 van pegados al final; no los
+      vuelvas a abrir. Calcula la nota ponderada de cada opción y la banda del método ({skill_sala}\SKILL.md, sección
+      «Puntaje, bandas y frenos»). Escribe VEREDICTO.md (corto, bajo 700 palabras; lo que sobre va a
+      VEREDICTO-DETALLE.md) y {traspaso} con solo el JSON válido del método (decision, opciones con nota y cuenta,
+      ganadora, veredicto, puntaje, asientos, por_que, disidencia, condiciones, frenos, pasos, pie), sin texto antes ni
+      después.
+      El expediente: {incluir:RESUMEN.md}
+      Las tarjetas de la ronda 2: {incluir:r2/asiento-*.md}

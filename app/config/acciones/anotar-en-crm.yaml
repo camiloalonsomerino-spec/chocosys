@@ -1,0 +1,34 @@
+# Acción estándar (sprint 23). Una etapa de receta la usa con «accion: anotar-en-crm» y «parametros:».
+# Una copia de este archivo en <datos>\acciones\ manda sobre esta. Forma de la instrucción: ver enviar-correo.yaml.
+nombre: Anotar en el CRM
+descripcion: Anota una actividad o una nota en un negocio del CRM a la vista, con la herramienta crm_actividad_nueva
+sale: false
+modelo: haiku
+esfuerzo: medium
+traspaso: context/CRM.md
+parametros:
+  negocio:
+    obligatorio: true
+    ayuda: El id del negocio o su nombre
+  que:
+    obligatorio: true
+    ayuda: Lo que se anota, en una línea
+  tipo:
+    tipo: opcion
+    opciones: [nota, tarea, llamada, correo, reunión]
+    defecto: nota
+    ayuda: nota, tarea, llamada, correo o reunión
+  responsable:
+    ayuda: Quién la hace
+  vence:
+    ayuda: Fecha AAAA-MM-DD, si tiene
+  ademas:
+    ayuda: Instrucción extra que se suma al final
+instruccion: |
+  Anota en el CRM, con la herramienta crm_actividad_nueva del MCP chocosys, una actividad de tipo {p:tipo} en el
+  negocio {p:negocio}: «{p:que}».[[ Responsable: {p:responsable}.]][[ Vence: {p:vence}.]]
+  Si el negocio viene por nombre, búscalo con crm_negocios y usa su id; si calza más de uno o ninguno, no anotes nada:
+  dilo en {carpeta}\{traspaso} y termina. No muevas el negocio de etapa ni cambies otros datos. Después léelo con crm_negocio y
+  comprueba que la actividad quedó, una sola vez.
+  Deja en {carpeta}\{traspaso} el negocio (id y nombre) y la actividad tal como quedó, con su id.
+  [[Además: {p:ademas}]]

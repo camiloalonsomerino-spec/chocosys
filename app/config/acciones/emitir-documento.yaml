@@ -1,0 +1,31 @@
+# Acción estándar (sprint 23). Una etapa de receta la usa con «accion: emitir-documento» y «parametros:».
+# Una copia de este archivo en <datos>\acciones\ manda sobre esta. Forma de la instrucción: ver enviar-correo.yaml.
+# «sale: true»: tomar un correlativo no se deshace, así que exige una puerta crítica justo antes, como el correo.
+nombre: Emitir documento
+descripcion: Emite una cotización (COT) o una orden de compra (OC) con la skill de emisión; el correlativo se toma recién al emitir
+sale: true
+modelo: opus
+esfuerzo: xhigh
+traspaso: context/EMITIDOS.md
+parametros:
+  tipo:
+    obligatorio: true
+    tipo: opcion
+    opciones: [COT, OC]
+    ayuda: COT (cotización a un cliente) u OC (orden de compra a un proveedor)
+  fuente:
+    obligatorio: true
+    ayuda: El archivo con lo aprobado en la puerta anterior (el plan de compra o la lista de la cotización)
+  skill:
+    defecto: documentos-emitir
+    ayuda: La skill que emite en este computador
+  ademas:
+    ayuda: Instrucción extra que se suma al final
+instruccion: |
+  Emite {p:tipo} con la skill {p:skill} (léela antes y síguela) a partir de {p:fuente}, que es lo aprobado en la puerta
+  anterior: no agregues, quites ni cambies líneas, cantidades ni precios.
+  El correlativo se toma recién al emitir, uno por documento y nunca antes; si la emisión falla después de tomarlo,
+  anótalo y no tomes otro sin decirlo. Revisa cada PDF antes de darlo por emitido (líneas, total y que la firma no quede
+  sola en otra página). Emitir no es enviar: no mandes nada a nadie.
+  Deja en {carpeta}\{traspaso} cada documento con su número, a quién va, el total y la ruta del PDF y de su planilla.
+  [[Además: {p:ademas}]]

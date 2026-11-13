@@ -1,0 +1,38 @@
+{
+  "_que_es": "El directorio de la «Segunda opinión» (sprint 11, 21-10-2026): sus asesores, qué 4 van según el tema y las profundidades. Se lee cada vez que se pide una opinión: un cambio acá vale de inmediato, sin reiniciar Chocosys. Cada asesor necesita su perfil en ~\\.claude\\skills\\sala-directiva\\perfiles\\<id>.md (qué cuida, qué teme, cómo razona, su marco y su contrapeso).",
+  "asientos": [
+    { "id": "caja", "nombre": "Caja", "marco": "con el marco de Buffett", "pregunta": "¿Cuánta plata sale y cuándo vuelve?" },
+    { "id": "comercial", "nombre": "Comercial", "marco": "con el marco de Hormozi", "pregunta": "¿Esto vende o ahuyenta?" },
+    { "id": "operacion", "nombre": "Operación", "marco": "con el marco de Goldratt", "pregunta": "¿Se puede fabricar e instalar a tiempo?" },
+    { "id": "metodo", "nombre": "Método", "marco": "con el marco de Wickman", "pregunta": "¿Queda escrito y se puede delegar?" },
+    { "id": "tu-tiempo", "nombre": "Tu tiempo", "marco": "con el marco de Martell", "pregunta": "¿Te saca del foco o de la U?" },
+    { "id": "legal", "nombre": "Legal", "marco": "marco propio (ley chilena)", "pregunta": "¿Qué nos pueden demandar?" }
+  ],
+  "temas": [
+    { "id": "operacion", "nombre": "Operación", "asientos": ["operacion", "metodo", "caja", "tu-tiempo"] },
+    { "id": "plata", "nombre": "Plata", "asientos": ["caja", "comercial", "operacion", "tu-tiempo"] },
+    { "id": "cliente", "nombre": "Cliente", "asientos": ["comercial", "operacion", "legal", "caja"] },
+    { "id": "legal", "nombre": "Legal", "asientos": ["legal", "metodo", "comercial", "caja"] },
+    { "id": "personal", "nombre": "Personal", "asientos": ["tu-tiempo", "caja", "metodo", "comercial"] }
+  ],
+  "profundidades": [
+    { "id": "opinion", "nombre": "Opinión", "version": "expres",
+      "ayuda": "Una idea precisa: veredicto, por qué y la disidencia. 1 sesión, 2 a 3 min",
+      "pide": "Opinión sobre una idea precisa: veredicto, por qué, la disidencia y como máximo 2 pasos. VEREDICTO.md de hasta 350 palabras." },
+    { "id": "plan", "nombre": "Opinión y plan de acción", "version": "expres",
+      "ayuda": "Lo anterior más un plan con dueño y fecha. 1 sesión, 3 a 4 min",
+      "pide": "Opinión y un plan de acción de 3 a 6 pasos con dueño y fecha, la prueba más barata y cuándo matar la idea." },
+    { "id": "investigacion", "nombre": "Con investigación en internet", "version": "investigacion",
+      "ayuda": "Busca en la red antes de opinar y deja sus fuentes. 1 sesión con internet, 5 a 8 min",
+      "pide": "Investigar en internet antes de opinar (INVESTIGACION.md con cada dato, su fuente, su fecha y su confiabilidad), y después opinión y plan de acción con las fuentes usadas." },
+    { "id": "debate", "nombre": "Debate del directorio", "version": "rapida",
+      "ayuda": "4 asesores en sesiones aparte y 2 rondas, con una puerta. 11 sesiones Opus, unos 8 min",
+      "pide": "La versión rápida del método: 4 asientos en sesiones aparte, 2 rondas y una puerta antes del veredicto." },
+    { "id": "completo", "nombre": "Directorio completo", "version": "completa",
+      "ayuda": "Los 6 asesores y 3 rondas, con una puerta. 22 sesiones Opus: para decisiones grandes",
+      "pide": "La versión completa del método: los 6 asientos, 3 rondas y una puerta antes del veredicto." }
+  ],
+  "profundidad_por_defecto": "plan",
+  "recetas": { "expres": "sala-expres", "investigacion": "sala-investigada", "rapida": "sala-rapida", "completa": "sala-directiva", "prueba": "prueba-sala" },
+  "sin_puerta": ["expres", "investigacion", "prueba"]
+}

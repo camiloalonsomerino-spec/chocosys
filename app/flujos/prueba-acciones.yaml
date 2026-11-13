@@ -1,0 +1,30 @@
+# Receta de ejemplo (sprint 23, 22-10-2026): cómo se usan las acciones estándar, con datos inventados.
+# Una etapa «accion: <id>» no lleva instrucción: la arma la acción (app\config\acciones\) con sus «parametros» al lanzar.
+# Un parámetro obligatorio que la receta deja vacío (aquí el «para» del correo) se pide en el lanzador en cada corrida.
+# La acción que sale del computador (el correo) exige una puerta crítica justo antes: en simulacro el flujo se detiene ahí.
+nombre: Prueba · acciones
+descripcion: Escribe un informe de una página, lo guarda en la carpeta del trabajo, lo anota en el CRM y se detiene antes de enviarlo
+grupo: Pruebas
+etapas:
+  - nombre: Informe
+    modelo: haiku
+    traspaso: context/INFORME-{fecha}.md
+    instruccion: >
+      Escribe en {traspaso} un informe inventado de una página sobre la entrega de la semana de un trabajo ficticio:
+      qué se hizo, qué falta y la próxima fecha. Sin nombres de personas ni empresas reales.
+  - accion: guardar-en-trabajo
+    parametros:
+      archivos: context/INFORME-{fecha}.md
+      subcarpeta: 02-ENTREGABLES
+  - accion: anotar-en-crm
+    parametros:
+      negocio: 1
+      que: Informe de la semana guardado en 02-ENTREGABLES
+  - puerta: Revisar el informe antes de enviarlo
+    critica: true
+  - accion: enviar-correo
+    parametros:
+      asunto: Informe de la semana
+      cuerpo: context/INFORME-{fecha}.md
+      adjuntos: context/INFORME-{fecha}.md
+      motivo: Probar la acción de correo con un informe inventado

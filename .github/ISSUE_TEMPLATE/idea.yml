@@ -1,0 +1,25 @@
+name: Idea
+description: Una función o un cambio que te gustaría en Chocosys.
+title: "[Idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Todo avance es público para todos: no hay funciones reservadas para nadie.
+        El autor no abre enlaces, ZIP, ejecutables ni adjuntos; describe la idea en texto y con capturas pegadas.
+        Para conversarla antes: Instagram @kmilito_ (https://instagram.com/kmilito_).
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué quieres hacer
+    validations:
+      required: true
+  - type: textarea
+    id: hoy
+    attributes:
+      label: Cómo lo haces hoy
+  - type: textarea
+    id: cambio
+    attributes:
+      label: Qué cambiaría en la app

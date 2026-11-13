@@ -1,0 +1,27 @@
+# Receta de prueba (20-10-2026): una puerta de elegir y una crítica de mentira, sin emitir nada.
+# Sirve para probar las puertas sin tocar ningún trabajo real: cada etapa solo escribe un archivo chico en la carpeta elegida.
+nombre: Prueba · puertas
+descripcion: Una lista, una puerta de elegir, una crítica de mentira y un final
+grupo: Pruebas
+etapas:
+  - nombre: Lista
+    modelo: haiku
+    traspaso: context/LISTA-{fecha}.md
+    instruccion: >
+      Escribe en {traspaso} exactamente estas tres líneas numeradas y nada más:
+      «1. Finanzas · guía del Control 3 · 23-10 · guía»,
+      «2. Tópicos · Reporte 2 · 24-10 · entrega»,
+      «3. Inglés · Unit 11 · 30-10 · inglés · navegador».
+  - puerta: Elegir qué va
+    elegir: true
+  - nombre: Leer
+    modelo: haiku
+    traspaso: context/LEIDO-{fecha}.md
+    instruccion: >
+      Copia en {traspaso} las líneas de context/LISTA-{fecha}.md que no llevan [no]. Nada más.
+  - puerta: Irreversible de mentira
+    critica: true
+  - nombre: Final
+    modelo: haiku
+    traspaso: context/FIN-{fecha}.md
+    instruccion: Escribe «ok» en {traspaso}. Nada más.

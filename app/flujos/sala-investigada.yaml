@@ -1,0 +1,36 @@
+# Segunda opinión con investigación en internet (sprint 10, 21-10-2026): la exprés, pero su terminal abre con WebSearch y
+# WebFetch permitidos («web: true») y antes de opinar deja INVESTIGACION.md con cada dato de la red y su fuente.
+# Sin puerta: busca y lee páginas públicas, no inicia sesión, no llena formularios, no envía ni mueve nada.
+nombre: Segunda opinión con investigación
+descripcion: Investiga en internet, da voz a cada asesor, los confronta y entrega opinión y plan de acción con fuentes
+grupo: Decisiones
+buscar_en: {salas}
+skill: sala-directiva
+contexto: >
+  Eres el Presidente de la sala directiva de {nombre}, en su versión exprés con investigación. El método está en
+  {skill_sala}\SKILL.md (secciones «Segunda opinión exprés» y «Puntaje, bandas y frenos»). La
+  pregunta y la profundidad pedida están en DECISION.md, el contexto en CONTEXTO.md y los asientos en ASIENTOS.md, todos en
+  {carpeta}. No escribas nada fuera de {carpeta}. En internet solo buscas y lees páginas públicas: sin iniciar sesión, sin
+  saltar CAPTCHA, sin llenar formularios ni descargar ejecutables. Español de Chile, directo; cada dato con su fuente, y lo que
+  no viene del material ni de la red, marcado (supuesto). Los asientos hablan como asiento, nunca como la persona famosa.
+etapas:
+  - nombre: Directorio · investigar y opinar
+    agentes: 1
+    modelo: opus
+    esfuerzo: high
+    solo_lectura: true
+    web: true
+    traspaso: VEREDICTO.json
+    # Sprint 27 (22-10-2026, D10): solo el tope del veredicto; sobre 700 se reescribe una vez y el detalle se separa.
+    tope_palabras: 700
+    tope_archivo: VEREDICTO.md
+    tope_detalle: VEREDICTO-DETALLE.md
+    instruccion: >
+      Lee el SKILL.md de la sala, DECISION.md, CONTEXTO.md, ASIENTOS.md y los perfiles de perfiles/. Primero investiga en
+      internet lo que la decisión necesita saber (precios, normas, competencia, casos parecidos) y escribe INVESTIGACION.md
+      con 3 a 8 datos: el dato, la URL, la fecha de la fuente, la fecha de consulta y la confiabilidad de A a D; si dos fuentes
+      chocan, cuál usaste y por qué. Después corre la versión exprés del método en DELIBERACION.md (resumen y pesos, una
+      tarjeta por asiento citando los datos de INVESTIGACION.md, y el choque), calcula el veredicto con la cuenta a la vista y
+      escribe VEREDICTO.md con opinión y un plan de 3 a 6 pasos con dueño y fecha, la prueba más barata, cuándo matar la idea y
+      las fuentes usadas. Termina con {traspaso}: solo el JSON válido del método, con el campo "profundidad", sin texto antes ni
+      después.

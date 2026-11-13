@@ -1,0 +1,238 @@
+<!doctype html>
+<!-- Chocosys · proyecto sin fines comerciales, solo recreativo · repositorio sin fines de lucro · licencia PolyForm Noncommercial 1.0.0 (ver AVISO.md) -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:">
+<title>Chocosys</title>
+<link rel="stylesheet" href="../node_modules/@fontsource-variable/instrument-sans/index.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/instrument-serif/400-italic.css">
+<link rel="stylesheet" href="../node_modules/@fontsource-variable/caveat/index.css">
+<link rel="stylesheet" href="../node_modules/@fontsource-variable/cascadia-code/index.css">
+<link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app brasa" id="app">
+
+  <header class="barra-sup arrastre">
+    <span class="marca-texto">Chocosys</span>
+    <button type="button" class="pill pill-inicio sin-arrastre" id="ir-inicio" title="Inicio: lo que te necesita, flujos, CRM de hoy y proyectos (Ctrl+Shift+0)">Inicio</button>
+    <!-- Las flechas aparecen solo si las pestañas no caben; se encienden si del otro lado hay una que te necesita (sprint 13). -->
+    <button type="button" class="flecha-esp sin-arrastre" id="esp-izq" title="Pestañas a la izquierda (Ctrl+Shift+←)" aria-label="Ver las pestañas de la izquierda" hidden>‹</button>
+    <nav class="espacios sin-arrastre" id="espacios" aria-label="Espacios"></nav>
+    <button type="button" class="flecha-esp sin-arrastre" id="esp-der" title="Pestañas a la derecha (Ctrl+Shift+→)" aria-label="Ver las pestañas de la derecha" hidden>›</button>
+    <button type="button" class="pill sin-arrastre" id="espacio-nuevo" title="Nuevo espacio" aria-label="Nuevo espacio">+</button>
+    <span class="relleno"></span>
+    <button type="button" class="pill sin-arrastre" id="recursos" aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-recursos" title="CPU, RAM y GPU de este PC, al día cada 2 s. Se pone ámbar con la RAM sobre 85 % o la CPU sobre 90 % por más de 30 s. Clic: qué consume y de qué sesión viene"><span id="recursos-txt">CPU … · RAM …</span></button>
+    <button type="button" class="pill sin-arrastre" id="plan" hidden aria-haspopup="dialog" aria-expanded="false" title="Uso de tu plan de Claude: las últimas 5 horas y la semana. Se pone ámbar sobre 80 %. Clic: a qué hora se reinicia cada uno"><span class="mini-plan" aria-hidden="true"><i><b id="plan-b5"></b></i><i><b id="plan-bs"></b></i></span><span id="plan-txt"></span></button>
+    <button type="button" class="pill sin-arrastre" id="necesitan" title="Lo que espera tu revisión (una puerta o una sesión con una pregunta). Clic: ir a lo siguiente (Ctrl+Tab)"><span class="punto brasa-punto"></span><span id="necesitan-txt"></span></button>
+    <button type="button" class="pill sin-arrastre" id="trabajando" aria-haspopup="true" aria-expanded="false" title="Sesiones con su terminal abierta y quién está trabajando, en todas las pestañas. Clic: la lista; clic en uno te lleva a él"><span class="punto respira"></span><span id="vivas-txt"></span><span class="sep" aria-hidden="true">·</span><span id="trabajando-txt"></span></button>
+    <span class="menu-barra-caja sin-arrastre">
+      <button type="button" class="pill" id="menu-boton" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-barra" title="Tema, segunda opinión y tutorial" aria-label="Menú">☰</button>
+      <div class="menu-barra" id="menu-barra" role="menu" hidden>
+        <button type="button" class="menu-fila" id="tema" role="menuitem" title="Cambiar el tema: Brasa, Gris o Blanco"><span class="tema-muestra" aria-hidden="true"></span>Tema<span class="menu-dato" id="tema-txt">Brasa</span></button>
+        <button type="button" class="menu-fila" id="segunda-opinion" role="menuitem" aria-haspopup="dialog" aria-expanded="false" title="Segunda opinión del directorio: asesores propios que se confrontan y evalúan una decisión, una idea o un proyecto">Segunda opinión</button>
+        <button type="button" class="menu-fila" id="que-usas" role="menuitem" title="Cuántas veces usaste cada botón, atajo y tipo de orden, y lo que nunca tocaste">Qué usas</button>
+        <button type="button" class="menu-fila" id="revisar-instalacion" role="menuitem" title="Lo que Chocosys necesita en este computador (Claude Code, Node.js, el MCP) y un botón para lo que falte">Revisar instalación</button>
+        <button type="button" class="menu-fila" id="tutorial" role="menuitem" title="Recorrido de esta pantalla: qué es y para qué sirve cada cosa">Tutorial de esta pantalla</button>
+        <button type="button" class="menu-fila" id="sobre-mi" role="menuitem" aria-haspopup="dialog" title="Tu nombre o apodo, a qué te dedicas y qué quieres hacer con Chocosys. Queda solo en este computador">Sobre mí</button>
+        <button type="button" class="menu-fila" id="reportar-fallo" role="menuitem" aria-haspopup="dialog" title="Arma un reporte con una captura y el registro, sin rutas, correos ni claves. Lo ves antes y lo envías tú">Reportar un fallo</button>
+        <button type="button" class="menu-fila" id="acerca-de" role="menuitem" aria-haspopup="dialog" title="Créditos de Chocosys y su aviso legal">Acerca de</button>
+      </div>
+    </span>
+  </header>
+
+  <div class="cuerpo">
+    <aside class="bandeja" id="bandeja" hidden aria-label="Sesiones del espacio">
+      <div class="grupos" id="grupos">
+        <div class="flujos" id="flujos"></div>
+        <section class="grupo" data-estado="necesita" hidden><h2 class="grupo-titulo"><span>Te necesitan</span><span class="cuenta"></span></h2><div class="filas"></div></section>
+        <section class="grupo" data-estado="termino" hidden><h2 class="grupo-titulo"><span>Terminaron</span><span class="cuenta"></span></h2><div class="filas"></div></section>
+        <section class="grupo" data-estado="trabajando" hidden><h2 class="grupo-titulo"><span>Trabajando</span><span class="cuenta"></span></h2><div class="filas"></div></section>
+        <section class="grupo" data-estado="pausa" hidden><h2 class="grupo-titulo"><span>En pausa</span><span class="cuenta"></span></h2><div class="filas"></div></section>
+      </div>
+    </aside>
+
+    <main class="escenario" id="escenario">
+      <div class="vista-lienzo" id="vista-lienzo">
+        <div class="lienzo" id="lienzo">
+          <h1 class="titulo-mano" id="titulo-espacio" title="Doble clic para renombrar el espacio"></h1>
+        </div>
+      </div>
+      <div class="capa-max" id="capa-max"></div>
+      <div class="pool" id="pool" aria-hidden="true"></div>
+
+      <div class="vista-flujo" id="vista-flujo" hidden aria-label="Flujos del espacio como kanban"></div>
+      <div class="vista-crm" id="vista-crm" hidden aria-label="CRM: negocios, próximas acciones e historial"></div>
+      <div class="vista-inicio" id="vista-inicio" hidden aria-label="Inicio: bandeja de hoy"></div>
+
+      <div class="aviso-centro" id="vacio" hidden>
+        <div class="tarjeta-vidrio">
+          <span class="rotulo">Espacio vacío</span>
+          <h2 class="tarjeta-titulo">Escribe una orden abajo <em>y parte una sesión.</em></h2>
+          <p class="tarjeta-texto">La orden abre Claude Code en la carpeta de este espacio. Con <kbd>@nombre</kbd> le hablas a una sesión que ya existe. También puedes lanzar un flujo con sus etapas.</p>
+          <div class="acciones">
+            <button type="button" class="boton principal" id="vacio-sesion">Abrir una sesión <kbd>Ctrl Shift N</kbd></button>
+            <button type="button" class="boton" id="vacio-flujo">Lanzar un flujo <kbd>Ctrl Shift L</kbd></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="aviso-centro capa-puerta" id="puerta" hidden>
+        <div class="tarjeta-vidrio puerta-tarjeta">
+          <div class="puerta-rotulo"><svg class="valvula grande" viewBox="0 0 18 18" aria-hidden="true"><path d="M1 1v16l8-8z"/><path d="M17 1v16l-8-8z"/></svg><span>Puerta · espera tu OK</span></div>
+          <h2 class="tarjeta-titulo" id="puerta-titulo"></h2>
+          <p class="tarjeta-texto" id="puerta-texto"></p>
+          <ul class="puerta-archivos" id="puerta-archivos"></ul>
+          <div class="puerta-contenido" id="puerta-contenido" hidden></div>
+          <div class="puerta-cambios" id="puerta-cambios" hidden>
+            <label for="puerta-indicacion" class="puerta-etiqueta" id="puerta-etiqueta"></label>
+            <textarea id="puerta-indicacion" rows="3" placeholder="Qué hay que cambiar, en una o dos frases"></textarea>
+          </div>
+          <div class="acciones">
+            <button type="button" class="boton brasa-boton" id="puerta-aprobar">Aprobar y seguir <kbd>Ctrl Enter</kbd></button>
+            <button type="button" class="boton" id="puerta-pedir">Pedir cambios</button>
+            <button type="button" class="boton" id="puerta-carpeta">Abrir la carpeta</button>
+            <button type="button" class="boton" id="puerta-volver">Volver</button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="paleta" aria-label="Herramientas">
+        <button type="button" class="herr" id="herr-sesion" data-etiqueta="Nueva sesión" data-atajo="Ctrl Shift N" aria-label="Nueva sesión (Ctrl+Shift+N)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button type="button" class="herr" id="herr-flujo" data-etiqueta="Lanzar un flujo" data-atajo="Ctrl Shift L" aria-label="Lanzar un flujo (Ctrl+Shift+L)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5M17 12h5M7 7v10l5-5zM17 7v10l-5-5z"/></svg></button>
+        <span class="separador" aria-hidden="true"></span>
+        <button type="button" class="herr on" id="modo-lienzo" data-etiqueta="Lienzo · ventanas libres" data-atajo="Ctrl Shift 1" aria-label="Ver como lienzo (Ctrl+Shift+1)" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="5" rx="1.5"/><rect x="13" y="11" width="8" height="9" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/></svg></button>
+        <button type="button" class="herr" id="modo-bandeja" data-etiqueta="Bandeja · lista por estado" data-atajo="Ctrl Shift 2" aria-label="Ver como bandeja (Ctrl+Shift+2)" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h5M4 12h5M4 18h5"/><rect x="12" y="4" width="9" height="16" rx="1.5"/></svg></button>
+        <button type="button" class="herr" id="modo-flujo" data-etiqueta="Flujo · kanban por etapa" data-atajo="Ctrl Shift 3" aria-label="Ver los flujos como kanban (Ctrl+Shift+3)" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg></button>
+        <button type="button" class="herr" id="modo-crm" data-etiqueta="CRM · negocios y próximas acciones" data-atajo="Ctrl Shift 4" aria-label="Ver el CRM (Ctrl+Shift+4)" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg></button>
+      </nav>
+
+      <div class="comando" id="comando">
+        <div class="aviso-flotante" id="aviso" hidden></div>
+        <ul class="sugerencias" id="sugerencias" hidden role="listbox" aria-label="Sesiones"></ul>
+        <div class="pista" id="pista" hidden>
+          <button type="button" class="pista-txt" id="pista-txt" title="Otra pista"></button>
+          <button type="button" class="pista-cerrar" id="pista-cerrar" title="No mostrar más pistas" aria-label="No mostrar más pistas">×</button>
+        </div>
+        <div class="chips">
+          <button type="button" class="chip" id="chip-sesion" title="Abre una sesión en una carpeta que eliges. Úsalo para un trabajo nuevo; si es parte del mismo, sigue en la misma sesión">+ Nueva sesión</button>
+          <button type="button" class="chip" id="chip-juntar" title="Juntar: eliges dos o más sesiones (de esta pestaña o de otras) y una sesión nueva lee lo que hizo cada una y lo junta en un solo informe. Úsalo cuando varias terminaron partes de un mismo trabajo">Juntar</button>
+          <button type="button" class="chip" id="chip-flujo" title="Lanza una receta de varias etapas con puertas para tu OK. Úsalo cuando el trabajo se repite con los mismos pasos o una parte espera a otra">Lanzar flujo</button>
+          <button type="button" class="chip" id="chip-siguiente" title="Salta a la próxima puerta o sesión que espera tu respuesta. Úsalo al volver a la pantalla, para atender lo pendiente en orden">Siguiente que te necesita <kbd>Ctrl Tab</kbd></button>
+          <button type="button" class="chip" id="chip-ordenar" title="Ordenar: acomoda las ventanas de esta pestaña en filas de tres, sin cerrar nada (útil cuando quedaron encimadas)">Ordenar</button>
+          <button type="button" class="chip" id="chip-quitar-terminados" hidden title="Quita los flujos terminados de este espacio y cierra sus terminales; los archivos quedan">Quitar flujos terminados</button>
+        </div>
+        <div class="sugerido" id="sugerido" hidden><span>Se lanza con</span><button type="button" class="chip" id="sugerido-chip" aria-haspopup="menu" title="Cambiar el modelo o el esfuerzo de esta sesión nueva"></button><span id="sugerido-porque"></span></div>
+        <label class="entrada">
+          <span class="esfera" aria-hidden="true"></span>
+          <input id="orden" autocomplete="off" spellcheck="false" placeholder="Orden para una sesión nueva · @nombre o @todas para dirigirla · junta @a @b · orquesta: objetivo para repartirlo" aria-label="Orden">
+          <kbd>Ctrl Shift K</kbd>
+        </label>
+      </div>
+
+      <div class="zoom" id="zoom">
+        <button type="button" id="zoom-menos" aria-label="Alejar">−</button>
+        <span id="zoom-txt">100 %</span>
+        <button type="button" id="zoom-mas" aria-label="Acercar">+</button>
+        <button type="button" id="zoom-ajustar" class="zoom-texto">Ajustar</button>
+        <button type="button" id="mosaico" class="zoom-texto" aria-pressed="true" title="Mosaico: las ventanas de esta pestaña se reparten la pantalla al 100 % cada vez que abres o cierras una. Clic para apagarlo y acomodar a mano en esta pestaña">Mosaico</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="lanzador" hidden>
+  <div class="modal-fondo" id="lanzador-fondo"></div>
+  <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="lanzador-titulo">
+    <header class="modal-cabeza">
+      <h1 class="modal-titulo" id="lanzador-titulo">Lanzar un flujo</h1>
+      <span class="modal-nota">Cada etapa abre sus terminales cuando termina la anterior.</span>
+    </header>
+    <div class="modal-cuerpo">
+      <nav class="recetas" id="recetas" aria-label="Recetas"></nav>
+      <div class="receta-detalle">
+        <div class="campo">
+          <span class="rotulo">Carpeta del trabajo</span>
+          <div class="campo-fila">
+            <span class="campo-valor" id="lanzador-carpeta">Sin elegir</span>
+            <button type="button" class="boton" id="lanzador-elegir">Elegir…</button>
+          </div>
+        </div>
+        <span class="rotulo">Etapas</span>
+        <div class="etapas" id="lanzador-etapas"></div>
+      </div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="interruptor" id="lanzador-simulacro" aria-pressed="false" title="El flujo termina en la primera puerta y no se puede aprobar: sirve para probar una receta sin consecuencias"><span class="perilla" aria-hidden="true"></span>Simulacro</button>
+      <span class="modal-resumen" id="lanzador-resumen"></span>
+      <button type="button" class="boton" id="lanzador-cancelar">Cancelar</button>
+      <button type="button" class="boton principal" id="lanzador-lanzar">Lanzar flujo</button>
+    </footer>
+  </section>
+</div>
+
+<!-- Sprint 21: la receta que propuso una sesión. Se corrige el YAML a la izquierda y la vista previa responde a la derecha. -->
+<div class="modal" id="propuesta" hidden>
+  <div class="modal-fondo" id="propuesta-fondo"></div>
+  <section class="modal-panel propuesta-panel" role="dialog" aria-modal="true" aria-labelledby="propuesta-titulo">
+    <header class="modal-cabeza">
+      <h1 class="modal-titulo" id="propuesta-titulo">Receta propuesta</h1>
+      <span class="modal-nota" id="propuesta-origen"></span>
+    </header>
+    <div class="modal-cuerpo propuesta-cuerpo">
+      <div class="propuesta-editor">
+        <label class="campo">
+          <span class="rotulo">Id de la receta</span>
+          <input class="campo-valor propuesta-id" id="propuesta-id" spellcheck="false" autocomplete="off">
+        </label>
+        <label class="rotulo" for="propuesta-yaml">Receta (YAML)</label>
+        <textarea class="propuesta-yaml" id="propuesta-yaml" spellcheck="false" wrap="off"></textarea>
+        <p class="propuesta-error" id="propuesta-error" role="status" aria-live="polite" hidden></p>
+      </div>
+      <div class="receta-detalle propuesta-vista" id="propuesta-vista" aria-label="Vista previa">
+        <div class="propuesta-cabeza-receta">
+          <span class="receta-nombre" id="propuesta-nombre"></span>
+          <span class="receta-desc" id="propuesta-desc"></span>
+          <span class="etapa-detalle" id="propuesta-carpeta"></span>
+        </div>
+        <span class="rotulo">Etapas y puertas</span>
+        <div class="etapas" id="propuesta-etapas"></div>
+      </div>
+    </div>
+    <footer class="modal-pie">
+      <button type="button" class="boton" id="propuesta-descartar" title="El borrador pasa a propuestas\_archivo\ y deja de estar pendiente">Descartar</button>
+      <span class="modal-resumen" id="propuesta-resumen"></span>
+      <button type="button" class="boton" id="propuesta-cerrar" title="Queda en «Propuestas pendientes» del lanzador">Cerrar</button>
+      <button type="button" class="boton" id="propuesta-probar" title="La guarda y abre el lanzador con ella y el simulacro encendido">Guardar y probar</button>
+      <button type="button" class="boton principal" id="propuesta-guardar">Guardar</button>
+    </footer>
+  </section>
+</div>
+
+<!-- Paneles flotantes: antes de los scripts, porque app.js les engancha sus eventos al cargar. -->
+<div id="bienvenida" class="bienvenida-fondo" hidden>
+  <section class="bienvenida tarjeta-vidrio" role="dialog" aria-modal="true" aria-labelledby="bienvenida-titulo">
+    <h1 id="bienvenida-titulo" class="bienvenida-titulo">Bienvenido a Chocosys</h1>
+    <p id="bienvenida-bajada">Revisemos lo que necesita en este computador. Toma un minuto.</p>
+    <div id="bienvenida-lista" class="bienvenida-lista"></div>
+    <footer class="bienvenida-pie"><span>Se vuelve a ver en ☰ → «Revisar instalación».</span><button type="button" class="boton principal" id="bienvenida-listo">Listo</button></footer>
+  </section>
+</div>
+<div id="lista-trabajando" class="pop-trabajando" role="dialog" aria-label="Quién está trabajando" hidden></div>
+<div id="pop-pestana" class="pop-trabajando pop-pestana" role="dialog" aria-label="Sesiones de la pestaña" hidden></div>
+<div id="panel-uso" class="pop-trabajando pop-uso" role="dialog" aria-label="Qué usas" hidden></div>
+<div id="pop-recursos" class="pop-trabajando pop-recursos" role="dialog" aria-label="Recursos del PC" hidden></div>
+<div id="pop-plan" class="pop-trabajando pop-plan" role="dialog" aria-label="Uso del plan" hidden></div>
+<div id="pop-modelo" class="menu-barra pop-modelo" role="menu" aria-label="Modelo y esfuerzo" hidden></div>
+
+<script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="../node_modules/@xterm/addon-webgl/lib/addon-webgl.js"></script>
+<script src="app.js"></script>
+<script src="inicio.js"></script>
+<script src="bienvenida.js"></script>
+  <div id="opinion-panel" class="op-panel" role="dialog" aria-label="Segunda opinión del directorio" hidden></div>
+</body>
+</html>

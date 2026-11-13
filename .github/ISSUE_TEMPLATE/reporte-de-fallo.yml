@@ -1,0 +1,57 @@
+name: Reporte de fallo
+description: Algo de Chocosys no funciona como esperabas.
+title: "[Fallo] "
+labels: ["fallo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Regla de seguridad:** el autor no abre enlaces, ZIP, ejecutables ni adjuntos. Escribe en texto y pega las capturas como imagen.
+        Lo más fácil: en la app, ☰ › Reportar un fallo, y pega aquí el texto que arma (ya viene con rutas, correos y claves tachados).
+        Revisa que tus capturas no muestren datos tuyos.
+        Si prefieres no hacerlo público, mándalo por mensaje directo de Instagram a @kmilito_ (https://instagram.com/kmilito_).
+  - type: input
+    id: version
+    attributes:
+      label: Versión
+      description: "Chocosys, Electron y Windows (la línea «Versión:» del reporte)."
+      placeholder: "Chocosys 0.21.0 · Electron 44.9.0 · Windows 10.0.26300"
+    validations:
+      required: true
+  - type: textarea
+    id: paso
+    attributes:
+      label: Qué pasó
+    validations:
+      required: true
+  - type: textarea
+    id: esperaba
+    attributes:
+      label: Qué esperabas
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para repetirlo
+      placeholder: "1. Abrí…\n2. Hice clic en…\n3. Pasó…"
+    validations:
+      required: true
+  - type: textarea
+    id: capturas
+    attributes:
+      label: Capturas
+      description: Pega las imágenes aquí. Nada de enlaces externos ni archivos comprimidos.
+  - type: textarea
+    id: registro
+    attributes:
+      label: Registro (tachado)
+      description: La sección «Registro» del reporte, si la incluiste.
+      render: text
+  - type: checkboxes
+    id: revisado
+    attributes:
+      label: Antes de enviar
+      options:
+        - label: Revisé que el texto y las capturas no muestren rutas, correos, claves ni datos de otras personas.
+          required: true

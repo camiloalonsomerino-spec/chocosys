@@ -1,0 +1,38 @@
+{
+  "id": "consultoria",
+  "nombre": "Consultoría",
+  "descripcion": "Un contacto inicial lleva a un diagnóstico y una propuesta; si se acepta, se ejecuta, se entrega el informe y se cobra.",
+  "inspirado_en": "El flujo de una consultora (diagnóstico → propuesta → informe) y los embudos de servicios profesionales de Pipedrive",
+  "embudo": "Consultoría",
+  "etapas": [
+    { "nombre": "Contacto inicial", "tipo": "abierta", "probabilidad": 10, "requisitos": [
+      { "tipo": "dato", "clave": "contacto_id", "texto": "Persona de contacto" } ] },
+    { "nombre": "Diagnóstico", "tipo": "abierta", "probabilidad": 20, "requisitos": [
+      { "tipo": "dato", "clave": "empresa_id", "texto": "Empresa cliente" } ] },
+    { "nombre": "Propuesta", "tipo": "abierta", "probabilidad": 50, "requisitos": [
+      { "tipo": "dato", "clave": "monto", "texto": "Honorarios propuestos" },
+      { "tipo": "documento", "clave": "Propuesta", "texto": "Propuesta enviada (OFE)", "patron": "propuesta|\\bOFE\\b" } ] },
+    { "nombre": "Aceptada", "tipo": "abierta", "probabilidad": 90, "requisitos": [
+      { "tipo": "documento", "clave": "Aceptación", "texto": "Aceptación escrita u orden de compra", "patron": "acept|firmad|\\bOC\\b" } ] },
+    { "nombre": "En ejecución", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "dato", "clave": "cierre_esperado", "texto": "Fecha de entrega comprometida" } ] },
+    { "nombre": "Entregado", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "documento", "clave": "Informe", "texto": "Informe o entregable final (INF)", "patron": "\\bINF\\b|informe|entregable" } ] },
+    { "nombre": "Cobrado", "tipo": "ganada", "probabilidad": 100, "requisitos": [
+      { "tipo": "documento", "clave": "Boleta o factura", "texto": "Boleta o factura emitida", "patron": "boleta|factura" } ] },
+    { "nombre": "Perdido", "tipo": "perdida", "probabilidad": 0, "requisitos": [] }
+  ],
+  "reglas": [
+    { "rotulo": "Diagnóstico sin propuesta", "condicion": "etapa_quieta", "etapa": "Diagnóstico", "dias": 7 },
+    { "rotulo": "Propuesta sin respuesta", "condicion": "etapa_quieta", "etapa": "Propuesta", "dias": 7 },
+    { "rotulo": "Entregado sin cobrar", "condicion": "etapa_quieta", "etapa": "Entregado", "dias": 10 }
+  ],
+  "perfil": [
+    { "p": "que_vende", "o": "servicios", "pts": 3, "razon": "Vendes servicios profesionales o asesorías." },
+    { "p": "cliente", "o": "empresas", "pts": 1, "razon": "Asesoras empresas." },
+    { "p": "cotiza", "o": "si", "pts": 2, "razon": "Cada encargo lleva una propuesta con honorarios." },
+    { "p": "terreno", "o": "no", "pts": 2, "razon": "El trabajo es de análisis e informe, no de instalación." },
+    { "p": "ciclo", "o": "semanas", "pts": 1, "razon": "Un encargo dura semanas." },
+    { "p": "documentos", "o": "contrato", "pts": 1, "razon": "Se formaliza con una aceptación o contrato." }
+  ]
+}

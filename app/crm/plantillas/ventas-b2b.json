@@ -1,0 +1,37 @@
+{
+  "id": "ventas-b2b",
+  "nombre": "Ventas a empresas",
+  "descripcion": "Una venta consultiva: se agenda, se califica, se presenta, se convence a quien decide, se envía el contrato y se gana o se pierde.",
+  "inspirado_en": "El «Sales pipeline» de serie de HubSpot (Appointment scheduled → Qualified to buy → Presentation scheduled → Decision maker bought-in → Contract sent → Closed won / Closed lost)",
+  "embudo": "Ventas",
+  "etapas": [
+    { "nombre": "Cita agendada", "tipo": "abierta", "probabilidad": 20, "requisitos": [
+      { "tipo": "dato", "clave": "contacto_id", "texto": "Contacto con quien se habla" } ] },
+    { "nombre": "Calificado", "tipo": "abierta", "probabilidad": 40, "requisitos": [
+      { "tipo": "dato", "clave": "empresa_id", "texto": "Empresa identificada" },
+      { "tipo": "dato", "clave": "monto", "texto": "Monto estimado" } ] },
+    { "nombre": "Presentación", "tipo": "abierta", "probabilidad": 60, "requisitos": [] },
+    { "nombre": "Decisor convencido", "tipo": "abierta", "probabilidad": 80, "requisitos": [
+      { "tipo": "dato", "clave": "cierre_esperado", "texto": "Fecha de cierre esperada" } ] },
+    { "nombre": "Contrato enviado", "tipo": "abierta", "probabilidad": 90, "requisitos": [
+      { "tipo": "documento", "clave": "Contrato o propuesta", "texto": "Contrato o propuesta enviada", "patron": "contrato|propuesta|\\bOFE\\b" } ] },
+    { "nombre": "Ganado", "tipo": "ganada", "probabilidad": 100, "requisitos": [
+      { "tipo": "documento", "clave": "Contrato firmado", "texto": "Contrato firmado u orden de compra", "patron": "firmad|\\bOC\\b|orden.de.compra" } ] },
+    { "nombre": "Perdido", "tipo": "perdida", "probabilidad": 0, "requisitos": [] }
+  ],
+  "reglas": [
+    { "rotulo": "Cita sin calificar", "condicion": "etapa_quieta", "etapa": "Cita agendada", "dias": 7 },
+    { "rotulo": "Presentación sin avance", "condicion": "etapa_quieta", "etapa": "Presentación", "dias": 10 },
+    { "rotulo": "Contrato sin respuesta", "condicion": "etapa_quieta", "etapa": "Contrato enviado", "dias": 5 }
+  ],
+  "perfil": [
+    { "p": "que_vende", "o": "productos", "pts": 2, "razon": "Vendes productos a otras empresas con un proceso de convencer." },
+    { "p": "que_vende", "o": "servicios", "pts": 2, "razon": "Un servicio recurrente o de contrato se vende en reuniones." },
+    { "p": "cliente", "o": "empresas", "pts": 3, "razon": "Le vendes a empresas: hay que llegar a quien decide." },
+    { "p": "ciclo", "o": "semanas", "pts": 2, "razon": "La venta toma semanas: conviene ver en qué paso está cada una." },
+    { "p": "ciclo", "o": "meses", "pts": 3, "razon": "Ciclos de meses necesitan etapas claras para no perder ventas." },
+    { "p": "llegada", "o": "directo", "pts": 2, "razon": "Los clientes llegan por contacto directo o referidos: se agenda una reunión." },
+    { "p": "documentos", "o": "contrato", "pts": 2, "razon": "Cierras con contrato." },
+    { "p": "terreno", "o": "no", "pts": 1, "razon": "No hay ejecución en terreno que seguir." }
+  ]
+}

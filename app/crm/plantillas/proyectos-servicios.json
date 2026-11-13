@@ -1,0 +1,54 @@
+{
+  "id": "proyectos-servicios",
+  "nombre": "Proyectos y servicios técnicos",
+  "descripcion": "Cada trabajo se cotiza, se adjudica con una orden de compra, se ejecuta en terreno, se entrega y se cobra. Es el embudo de una empresa de proyectos e instalaciones.",
+  "inspirado_en": "El flujo de una empresa de proyectos e instalaciones (solicitud → cotización → OC → terreno → entrega → cobro) y el «Deal pipeline» de HubSpot para servicios",
+  "embudo": "Trabajos",
+  "etapas": [
+    { "nombre": "Solicitud", "tipo": "abierta", "probabilidad": 10, "requisitos": [
+      { "tipo": "dato", "clave": "empresa_id", "texto": "Cliente identificado" } ] },
+    { "nombre": "Cotización", "tipo": "abierta", "probabilidad": 30, "requisitos": [
+      { "tipo": "dato", "clave": "monto", "texto": "Monto cotizado" },
+      { "tipo": "documento", "clave": "Cotización", "texto": "Cotización emitida", "patron": "\\bCOT\\b|cotizaci" } ] },
+    { "nombre": "OC", "tipo": "abierta", "probabilidad": 90, "requisitos": [
+      { "tipo": "documento", "clave": "OC del cliente", "texto": "Orden de compra del cliente", "patron": "\\bOC\\b|orden.de.compra" } ] },
+    { "nombre": "Terreno", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "dato", "clave": "cierre_esperado", "texto": "Fecha de entrega comprometida" } ] },
+    { "nombre": "Entrega", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "documento", "clave": "Acta de entrega", "texto": "Acta, guía o certificado de entrega", "patron": "acta|gu[ií]a|certificad|entrega" } ] },
+    { "nombre": "Cobro", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "documento", "clave": "Factura", "texto": "Factura emitida", "patron": "factura|\\bDTE\\b" } ] },
+    { "nombre": "Ganado", "tipo": "ganada", "probabilidad": 100, "requisitos": [
+      { "tipo": "documento", "clave": "Comprobante de pago", "texto": "Pago recibido", "patron": "pago|transferencia|comprobante" },
+      { "tipo": "actividades_al_dia", "clave": "-", "texto": "Sin actividades pendientes" } ] },
+    { "nombre": "Perdido", "tipo": "perdida", "probabilidad": 0, "requisitos": [] }
+  ],
+  "reglas": [
+    { "rotulo": "Solicitud sin cotizar", "condicion": "etapa_quieta", "etapa": "Solicitud", "dias": 4 },
+    { "rotulo": "Cotización sin respuesta", "condicion": "etapa_quieta", "etapa": "Cotización", "dias": 5 },
+    { "rotulo": "OC sin arrancar", "condicion": "etapa_quieta", "etapa": "OC", "dias": 3 },
+    { "rotulo": "Entregado sin cobrar", "condicion": "etapa_quieta", "etapa": "Entrega", "dias": 10 },
+    { "rotulo": "Cobro pendiente", "condicion": "etapa_quieta", "etapa": "Cobro", "dias": 15 },
+    { "rotulo": "Cerrado con documentos pendientes", "condicion": "faltan_requisitos", "etapa": "Ganado", "dias": 0 }
+  ],
+  "plata": {
+    "libro": { "patron": "^CONTROL-COMPRA-VENTA_.*\\.xlsx$", "carpeta_aparte": "3-COSTOS-NO-COMPARTIR",
+      "costo": { "hoja": "POR PROVEEDOR", "etiqueta": "TOTAL" },
+      "venta": { "hoja": "BASE COTIZACIÓN", "etiqueta": "TOTAL NETO" } },
+    "compras": { "carpeta": "04-ORDENES-DE-COMPRA", "patron": "^OC-.*\\.xlsx$", "etiqueta": "NETO" }
+  },
+  "carpeta": {
+    "estructura": ["01-LISTADO-A-COMPRAR", "02-COTIZACIONES", "03-COMPARATIVA-DE-PRECIOS", "04-ORDENES-DE-COMPRA"]
+  },
+  "perfil": [
+    { "p": "que_vende", "o": "proyectos", "pts": 4, "razon": "Vendes proyectos a medida: cada uno pasa por cotización, adjudicación y ejecución." },
+    { "p": "que_vende", "o": "servicios", "pts": 2, "razon": "Los servicios técnicos siguen el mismo camino de cotizar, ejecutar y cobrar." },
+    { "p": "cliente", "o": "empresas", "pts": 2, "razon": "Tus clientes son empresas, que compran con orden de compra." },
+    { "p": "cotiza", "o": "si", "pts": 3, "razon": "Cada venta lleva cotización: es una etapa con su documento." },
+    { "p": "terreno", "o": "si", "pts": 3, "razon": "Hay trabajo en terreno o instalación: tiene su etapa propia." },
+    { "p": "cobro", "o": "unico", "pts": 1, "razon": "Cobras una vez por trabajo, al final." },
+    { "p": "llegada", "o": "licitaciones", "pts": 1, "razon": "Las licitaciones también terminan en cotización y orden de compra." },
+    { "p": "documentos", "o": "orden_compra", "pts": 2, "razon": "Pides orden de compra: es el requisito para pasar a ejecutar." },
+    { "p": "documentos", "o": "acta_entrega", "pts": 1, "razon": "Cierras con acta o certificado de entrega." }
+  ]
+}

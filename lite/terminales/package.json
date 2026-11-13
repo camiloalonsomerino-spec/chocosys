@@ -1,0 +1,12 @@
+{
+  "name": "consola-agentes",
+  "productName": "Chocosys",
+  "version": "0.21.0",
+  "description": "Chocosys lite (terminales): el mismo código de app/, sin flujos, CRM, segunda opinión, tareas programadas ni MCP.",
+  "main": "arranque.js",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "scripts": {
+    "start": "node ../../app/node_modules/electron/cli.js ."
+  }
+}

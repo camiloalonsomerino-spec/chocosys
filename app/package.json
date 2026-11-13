@@ -1,0 +1,68 @@
+{
+  "name": "consola-agentes",
+  "productName": "Chocosys",
+  "version": "0.21.0",
+  "description": "Varias sesiones de Claude Code en terminales reales, con la bandeja de lo que te necesita.",
+  "main": "main.js",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "scripts": {
+    "start": "electron .",
+    "instalador": "node scripts/instalador.js",
+    "instalador:mio": "node scripts/instalador.js --mio",
+    "probar": "node scripts/probar-reporte.js"
+  },
+  "dependencies": {
+    "@fontsource-variable/cascadia-code": "5.3.0",
+    "@fontsource-variable/caveat": "5.3.0",
+    "@fontsource-variable/instrument-sans": "5.3.0",
+    "@fontsource/instrument-serif": "5.3.0",
+    "@lydell/node-pty": "1.2.0-beta.15",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-webgl": "0.19.0",
+    "@xterm/xterm": "6.0.0",
+    "js-yaml": "4.3.2"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "cl.camilomerino.chocosys",
+    "productName": "Chocosys",
+    "directories": {
+      "output": "../dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!scripts/**",
+      "!build/**",
+      "!**/_archivo/**",
+      "!**/*.log"
+    ],
+    "asarUnpack": [
+      "edicion.js",
+      "hook.js",
+      "linea.js",
+      "terminales.js",
+      "trabajo-windows.ps1",
+      "mcp/**",
+      "node_modules/@lydell/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Chocosys",
+      "uninstallDisplayName": "Chocosys",
+      "artifactName": "Chocosys-instalador-${version}.exe"
+    }
+  }
+}

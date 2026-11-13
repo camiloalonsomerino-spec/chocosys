@@ -1,0 +1,38 @@
+{
+  "id": "encargos",
+  "nombre": "Encargos y trabajos delegados",
+  "descripcion": "Lo que te piden hacer, de un cliente o del mismo negocio: una web, una cotización, un contrato. Cada encargo se define, se hace, se revisa y se entrega, y queda documentado en su carpeta.",
+  "inspirado_en": "Las solicitudes internas de los equipos (el «ticket» de Jira Service Management o el «request» de Asana) llevadas al modelo de negocio de un CRM básico",
+  "embudo": "Encargos",
+  "etapas": [
+    { "nombre": "Pedido", "tipo": "abierta", "probabilidad": 50, "requisitos": [
+      { "tipo": "dato", "clave": "cierre_esperado", "texto": "Para cuándo lo necesitan" } ] },
+    { "nombre": "Definido", "tipo": "abierta", "probabilidad": 80, "requisitos": [
+      { "tipo": "dato", "clave": "carpeta", "texto": "Carpeta del encargo" },
+      { "tipo": "documento", "clave": "Plan del encargo", "texto": "Qué hay que entregar, en el TRABAJO.md", "patron": "^TRABAJO\\.md$" } ] },
+    { "nombre": "En curso", "tipo": "abierta", "probabilidad": 90, "requisitos": [] },
+    { "nombre": "Revisión", "tipo": "abierta", "probabilidad": 95, "requisitos": [
+      { "tipo": "documento", "clave": "Borrador", "texto": "Borrador para revisar", "patron": "02-EN-PROCESO[\\\\/]" } ] },
+    { "nombre": "Entregado", "tipo": "ganada", "probabilidad": 100, "requisitos": [
+      { "tipo": "documento", "clave": "Entregable", "texto": "Lo entregado, en 03-ENTREGADO", "patron": "03-ENTREGADO[\\\\/]" },
+      { "tipo": "actividades_al_dia", "clave": "-", "texto": "Sin actividades pendientes" } ] },
+    { "nombre": "Descartado", "tipo": "perdida", "probabilidad": 0, "requisitos": [] }
+  ],
+  "reglas": [
+    { "rotulo": "Encargo sin definir", "condicion": "etapa_quieta", "etapa": "Pedido", "dias": 2 },
+    { "rotulo": "Encargo quieto", "condicion": "etapa_quieta", "etapa": "En curso", "dias": 7 },
+    { "rotulo": "Revisión sin respuesta", "condicion": "etapa_quieta", "etapa": "Revisión", "dias": 3 },
+    { "rotulo": "Entregado con algo pendiente", "condicion": "faltan_requisitos", "etapa": "Entregado", "dias": 0 }
+  ],
+  "carpeta": {
+    "estructura": ["01-LO-QUE-LLEGO", "02-EN-PROCESO", "03-ENTREGADO"],
+    "tipos": ["web", "cotización", "contrato", "otro"]
+  },
+  "perfil": [
+    { "p": "cliente", "o": "interno", "pts": 6, "razon": "Los encargos son internos: el cliente es el mismo negocio, y lo que importa es definir, hacer y entregar." },
+    { "p": "que_vende", "o": "servicios", "pts": 2, "razon": "Lo que se entrega es trabajo hecho (un documento, una web), no un producto." },
+    { "p": "cotiza", "o": "no", "pts": 1, "razon": "No se cotiza cada encargo: se define qué hay que entregar." },
+    { "p": "ciclo", "o": "dias", "pts": 1, "razon": "Los encargos se resuelven en días: el embudo avisa cuando uno se queda quieto." },
+    { "p": "documentos", "o": "contrato", "pts": 1, "razon": "Contratos, cotizaciones y webs son encargos típicos, cada uno con su carpeta." }
+  ]
+}
