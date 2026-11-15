@@ -5,6 +5,22 @@
 Las fechas van en formato DD-MM-AAAA. Este repositorio parte con un solo commit (13-11-2026); lo anterior viene del
 historial de desarrollo y de las fichas de actualización, contado sin datos de nadie.
 
+## 0.22.0 · 15-11-2026
+
+- **Fuentes propias:** `%APPDATA%\consola-agentes\fuentes\fuentes.json` elige la fuente de los títulos, de la interfaz
+  y de la terminal. Cada familia es una carpeta con sus archivos (`.woff2`, `.woff`, `.ttf` u `.otf`), en esa carpeta o
+  en `app/fuentes/`; sin carpeta, se usa la instalada en Windows. La terminal solo acepta monoespaciadas. Una fuente que
+  no está, un nombre con caracteres raros o un `fuentes.json` roto dejan la de fábrica y avisan. Trae Barlow, Libre
+  Baskerville y Geist Mono (SIL OFL 1.1, con su licencia). Guía: `docs/fuentes.md`. Prueba: `npm run probar`.
+- **Terminal:** al volver a una pestaña ya no se crea de nuevo el dibujo por GPU de cada terminal (lo conservan hasta 6);
+  el cambio bajó de 30 a 80 ms por terminal a menos de 1 ms. Si cambia la escala de pantalla, se crea de nuevo.
+- **Terminal:** interlineado 1,1 (33 filas donde cabían 30); el fondo bajo la última fila ya no queda negro puro; con
+  una ventana agrandada, la mascota va en la barra y el título de la pestaña se oculta.
+- **Sesiones:** tras `/clear` o `/resume` se anota la conversación vigente (llega en cada aviso del hook) y es la que se
+  retoma al abrir de nuevo la app o al cambiar el modelo. Una sesión no anota una conversación que ya tiene otra.
+- **Cerrar sesiones:** el tope de 15 s para cerrar el árbol de procesos rige solo al cambiar el modelo. Al cerrar
+  muchas sesiones juntas, las órdenes que no alcanzaban a empezar se cancelaban y dejaban servidores MCP vivos.
+
 ## 0.21.0 · 13-11-2026 (primera versión pública)
 
 - **Créditos** la primera vez que se abre la app (después, en ☰ › Acerca de). El texto vive en `app/config/creditos.md`.

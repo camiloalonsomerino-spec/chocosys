@@ -46,8 +46,25 @@ hooks y otro candado de instancia).
 | Segunda opinión | Asesores que evalúan una decisión y se confrontan antes del veredicto |
 | Recursos del PC | CPU, RAM y GPU, y qué sesión consume qué |
 | MCP `chocosys` | Una sesión puede leer el estado, abrir otras y lanzar flujos (aprobar puertas, no) |
+| Fuentes | Títulos, interfaz y terminal con otra fuente, desde un archivo ([guía](docs/fuentes.md)) |
 
 Los atajos de la app llevan `Shift` porque `Ctrl+N`, `Ctrl+L` y `Ctrl+R` son de Claude Code.
+
+## Lo nuevo en la 0.22.0
+
+- **Fuentes propias.** Un archivo `fuentes.json` en `%APPDATA%\consola-agentes\fuentes\` dice qué fuente va en los
+  títulos, en la interfaz y en la terminal. Sirven las instaladas en Windows y las que pongas en esa carpeta; Chocosys
+  trae tres con licencia libre (Barlow, Libre Baskerville y Geist Mono). La terminal solo acepta monoespaciadas, y una
+  fuente que no está deja la de fábrica con un aviso. Guía, formatos, licencias y capturas: [docs/fuentes.md](docs/fuentes.md).
+- **Cambio de pestaña más rápido.** Al volver a una pestaña, cada terminal creaba de nuevo su dibujo por GPU (WebGL) y
+  la ventana se pegaba entre 30 y 80 ms por terminal; ahora lo conservan hasta 6 terminales y el cambio tarda menos de
+  1 ms (medido por el autor con una terminal, 14-11-2026).
+- **Terminal con interlineado 1,1:** caben 33 filas donde cabían 30. Se arreglan una franja negra bajo la última fila
+  y, con una ventana agrandada, la mascota que tapaba texto y el título de la pestaña que asomaba cortado.
+- **Sesiones:** después de `/clear` o `/resume`, al abrir de nuevo la app se retoma la conversación vigente y no la del
+  arranque. Al cerrar muchas sesiones juntas, sus servidores MCP ya no quedan vivos.
+
+![Chocosys con Barlow en la interfaz, Libre Baskerville en los títulos y Geist Mono en la terminal](docs/img/fuentes-3-con-geist-mono.png)
 
 ## Tus datos
 
@@ -89,6 +106,8 @@ carpetas ni funciones reservadas para nadie; todo avance es público para todos.
 |---|---|
 | `app/` | Chocosys completa (Electron, node-pty y xterm.js) |
 | `app/config/` | Lo que se personaliza sin tocar código: tutorial, asesores, acciones, créditos y contacto |
+| `app/fuentes/` | Las fuentes que trae Chocosys (Barlow, Libre Baskerville y Geist Mono), cada una con su licencia OFL |
+| `docs/` | Guías: [fuentes de la interfaz](docs/fuentes.md), con sus capturas en `docs/img/` |
 | `lite/` | Las ediciones livianas `terminales` y `flujos`: el mismo código de `app/`, con menos partes |
 | `assets/logo/` | El logo (una C naranja) en SVG, PNG e ICO, y `generar.py`, que lo rehace y lo copia a la app |
 | `herramientas/` | `aviso-legal.js`, que pone o quita la línea de aviso en cada archivo propio |
