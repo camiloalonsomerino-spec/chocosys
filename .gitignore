@@ -7,5 +7,6 @@ Thumbs.db
 datos-prueba/
 **/reportes/
 *.mp4
+!docs/sitio/video/*.mp4
 *.mov
 *.zip

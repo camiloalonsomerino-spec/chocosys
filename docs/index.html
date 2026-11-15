@@ -220,11 +220,10 @@ figcaption { color: var(--tinta-2); font-size: 14px; margin-top: 10px; }
 .quienes { list-style: none; padding: 0; margin: 24px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .quienes li { padding: 9px 16px; border: 1px solid var(--linea-fuerte); border-radius: 12px; background: var(--ventana); }
 
-/* El video (y su espacio mientras no llega). */
-.video-pronto, #video video { width: 100%; max-width: 920px; aspect-ratio: 16 / 9; border-radius: 16px; }
-#video video { display: block; background: #000; border: 1px solid var(--linea); }
-.video-pronto { display: grid; place-items: center; padding: 20px; border: 1px dashed var(--linea-fuerte); background: var(--hundido); color: var(--tinta-2); text-align: center; }
-.video-pronto p { margin: 0; }
+/* El video de presentación. */
+.video-marco { margin-top: 28px; max-width: 1040px; }
+#video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: #000; border: 1px solid var(--linea-fuerte); box-shadow: var(--sombra); }
+.video-error { margin: 12px 0 0; color: var(--tinta-2); }
 
 /* Instalar */
 .pasos { counter-reset: paso; list-style: none; padding: 0; margin: 28px 0 0; max-width: 760px; }
@@ -332,11 +331,14 @@ footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
   <section id="video" class="franja" aria-labelledby="t-video">
     <div class="ancho">
       <h2 class="revelar" id="t-video">Míralo andando.</h2>
-      <!-- Para poner el video: dejar el archivo en docs/sitio/video/ y cambiar el div.video-pronto por
-           <video controls preload="metadata" poster="sitio/img/inicio.webp" src="sitio/video/<archivo>.mp4"></video> -->
-      <div class="video-pronto revelar" role="note">
-        <p>El video de presentación está en preparación.</p>
+      <p class="lead revelar">Cincuenta segundos: sesiones, espacios, temas, flujos con su puerta, la central y una tarea programada. Los subtítulos van en la imagen y el audio son solo efectos.</p>
+      <div class="video-marco revelar">
+        <video id="video-presentacion" controls muted playsinline preload="none" width="1920" height="1080" poster="sitio/img/video-portada.webp" aria-label="Video de presentación de Chocosys, con subtítulos en español en la imagen">
+          <source src="sitio/video/chocosys-presentacion.mp4" type="video/mp4">
+        </video>
+        <p class="video-error" id="video-error" hidden>No se pudo cargar el video. <a href="sitio/video/chocosys-presentacion.mp4">Ábrelo aparte</a> (MP4, 5 MB).</p>
       </div>
+      <p class="app-pie">Reconstrucción de la interfaz con datos inventados.</p>
     </div>
   </section>
 
@@ -726,6 +728,19 @@ npm start</code></pre>
   document.addEventListener('visibilitychange', demoAndar);
   quieto.addEventListener('change', demoAndar);
   sesionesEn(quieto.matches ? 5 : 1);
+
+  /* ---------- Video: parte solo (en silencio) al verse; no carga nada antes ni con «reducir movimiento» ---------- */
+  var video = document.getElementById('video-presentacion'), lotocaron = false, esperado = null;
+  video.querySelector('source').addEventListener('error', function () { document.getElementById('video-error').hidden = false; });
+  // Los eventos llegan después de la llamada: el que esperábamos es nuestro; cualquier otro, de la persona.
+  ['play', 'pause'].forEach(function (ev) { video.addEventListener(ev, function () { if (ev === esperado) esperado = null; else lotocaron = true; }); });
+  function mandar(accion) { esperado = accion; var r = video[accion](); if (r && r.catch) r.catch(function () { esperado = null; }); }
+  new IntersectionObserver(function (es) {
+    var e = es[0];
+    if (lotocaron || quieto.matches) return; // si la persona lo usó, o pidió menos movimiento, manda ella
+    if (e.isIntersecting && e.intersectionRatio >= 0.5) mandar('play');
+    else if (!video.paused) mandar('pause');
+  }, { threshold: [0, 0.5] }).observe(video);
 })();
 </script>
 </body>
