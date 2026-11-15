@@ -129,5 +129,6 @@ contextBridge.exposeInMainWorld('consola', {
   alEspacio: (fn) => ipcRenderer.on('espacio', (e, id) => fn(id)),
   alAviso: (fn) => ipcRenderer.on('aviso', (e, texto) => fn(texto)),
   personal: () => ipcRenderer.invoke('personal:css'),
+  fuentes: () => ipcRenderer.invoke('fuentes:leer'),
   alPersonal: (fn) => ipcRenderer.on('personal', (e, css) => fn(css))
 });

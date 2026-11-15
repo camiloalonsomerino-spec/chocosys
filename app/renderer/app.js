@@ -147,6 +147,9 @@ function aviso(texto) {
 
 // ── Terminales ──────────────────────────────────────────
 
+// La de fuentes.json reemplaza a esta si es monoespaciada (aplicarFuentes).
+const MONO_BASE = '"Cascadia Code Variable", Consolas, monospace';
+let monoTerminal = MONO_BASE;
 function terminal(id) {
   if (terminales.has(id)) return terminales.get(id);
   const host = h('div', { class: 'term-host' });
@@ -155,7 +158,7 @@ function terminal(id) {
   // y escrita en otra grilla los movimientos de cursor de Claude Code caían donde no era (texto encimado, 03-11-2026).
   const previo = (sessionStorage.getItem('tam-' + id) || '').split('x').map(Number);
   const term = new Terminal({
-    fontFamily: '"Cascadia Code Variable", Consolas, monospace',
+    fontFamily: monoTerminal,
     fontSize: 13.5, lineHeight: 1.1, fontWeight: 400, fontWeightBold: 650,
     // 120x32 es el tamaño con que main abre cada sesión (abrirAlMedir): oculta no mide, y con el 80x24 de xterm la pantalla
     // de Claude se dibujaba en una grilla distinta a la de su PTY y dejaba restos al ajustarse.
@@ -3137,6 +3140,46 @@ function estiloPersonal(css) {
 }
 api.alPersonal(estiloPersonal);
 api.personal().then(estiloPersonal).catch(() => {});
+
+// Fuentes propias (fuentes\fuentes.json en la carpeta de datos, ver docs/fuentes.md). La que no está deja la de siempre.
+const lienzoMedir = document.createElement('canvas').getContext('2d');
+function anchoTexto(familia, texto) { lienzoMedir.font = `16px ${familia}`; return lienzoMedir.measureText(texto).width; }
+// Con dos respaldos distintos el texto mide igual solo si la fuente existe.
+async function hayFuente(n) {
+  await Promise.all(['16px', 'bold 16px'].map((p) => document.fonts.load(`${p} "${n}"`).catch(() => {})));
+  return Math.abs(anchoTexto(`"${n}", monospace`, 'Mmi') - anchoTexto(`"${n}", serif`, 'Mmi')) < 0.5;
+}
+const esMono = (n) => Math.abs(anchoTexto(`"${n}", monospace`, 'iiiiiiiiii') - anchoTexto(`"${n}", monospace`, 'MMMMMMMMMM')) < 0.5;
+async function aplicarFuentes() {
+  const f = await api.fuentes().catch(() => ({}));
+  const avisos = f.avisos || [];
+  const raiz = getComputedStyle(document.documentElement);
+  const variables = [];
+  for (const rol of ['titulos', 'interfaz', 'terminal'].filter((r) => f[r])) {
+    const n = f[rol].nombre;
+    // FontFace y no @font-face: al reescribir una hoja se descargan sus fuentes y la terminal volvía a medir con la de respaldo.
+    for (const c of f[rol].caras) document.fonts.add(new FontFace(n, `url("${c.url}")`, { weight: c.peso, style: c.cursiva ? 'italic' : 'normal' }));
+    if (!(await hayFuente(n))) { avisos.push(`No encontré la fuente «${n}» (${rol}) ni en la carpeta fuentes ni instalada: sigue la de siempre.`); continue; }
+    if (rol === 'terminal') {
+      if (esMono(n)) monoTerminal = `"${n}", ${MONO_BASE}`;
+      else avisos.push(`«${n}» no es monoespaciada: la terminal sigue con su fuente de siempre.`);
+      continue;
+    }
+    const v = rol === 'titulos' ? '--f-mano' : '--f-ui';
+    variables.push(`${v}: "${n}", ${raiz.getPropertyValue(v).trim()};`);
+    if (rol === 'titulos') document.documentElement.classList.add('titulos-propios');
+  }
+  if (variables.length) {
+    const el = document.createElement('style');
+    el.id = 'estilo-fuentes';
+    el.textContent = `:root { ${variables.join(' ')} }`;
+    // Antes del CSS personal: si los dos cambian una fuente, manda el personal.
+    document.head.insertBefore(el, document.getElementById('estilo-personal'));
+  }
+  if (monoTerminal !== MONO_BASE) for (const [id, t] of terminales) { t.term.options.fontFamily = monoTerminal; ajustar(id); }
+  if (avisos.length) { console.warn(avisos.join('\n')); aviso(avisos.join(' ')); }
+}
+aplicarFuentes();
 
 (async function iniciar() {
   try {

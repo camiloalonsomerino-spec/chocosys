@@ -15,6 +15,7 @@ const yaml = require('js-yaml');
 const { leerRecetas, interpretarReceta, armarAcciones, ORIGENES, crearMotor, configurar: configurarFlujos, carpetaRecetas, ESFUERZOS, ESFUERZO_POR_DEFECTO, MODELOS_RECETA, MAX_AGENTES, TOPE_MIN, TOPE_MAX } = require('./flujos');
 const accionesEstandar = require('./acciones');
 const reporte = require('./reporte');
+const tipografia = require('./tipografia');
 const edicion = require('./edicion');
 // Recursos del PC y el optimizador que sugiere (PRD-05, 02-11-2026).
 const recursos = require('./recursos');
@@ -1573,6 +1574,8 @@ async function atenderMcp(accion, d) {
 }
 
 ipcMain.handle('personal:css', () => (fs.existsSync(ARCHIVO_PERSONAL) ? fs.readFileSync(ARCHIVO_PERSONAL, 'utf8') : ''));
+
+ipcMain.handle('fuentes:leer', () => tipografia.leer(DATOS, __dirname));
 
 ipcMain.handle('sesiones:lista', () => ({ sesiones: [...sesiones.values()].map(publica), flujos: motor.exportar(), espacios, espacioActual }));
 
