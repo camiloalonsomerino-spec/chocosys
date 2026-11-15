@@ -213,19 +213,25 @@ function repintar(t, alFondo) {
   } catch (e) { /* todavía sin dibujo */ }
 }
 // Dibujo por GPU (WebGL): los caracteres de bloque (el logo de Claude Code, barras, bordes de tablas) llenan la celda
-// entera, sin las franjas del interlineado 1,2 del dibujo normal (20-10-2026). Solo lo llevan las terminales a la vista:
+// entera, sin las franjas del interlineado del dibujo normal (20-10-2026). Lo llevan las terminales a la vista:
 // Chromium admite 16 contextos WebGL por ventana y pasado eso apaga el más viejo, que quedaba 3 s quieta y caía al dibujo
 // normal con otro ancho de celda (7,2 a 7,9 px) sin reajustarse: texto desalineado y cortado a la derecha (03-11-2026).
+// Una oculta lo conserva mientras haya cupo: crearlo de nuevo al volver a su pestaña dejaba la ventana pegada 25 a 80 ms
+// por terminal (14-11-2026). shortcut: sale la primera de la lista, no la menos usada; con más de 6 abiertas importaría.
+const GPU_MAX = 6;
 function gpu(id, encender) {
   const t = terminales.get(id);
+  // Si cambió la escala de pantalla (otro monitor) se crea de nuevo, como cuando no se conservaba: conservarlo ahí no está probado.
+  if (t && t.gpu && t.escala !== devicePixelRatio) { t.gpu.dispose(); t.gpu = null; }
   if (!t || !!t.gpu === encender || typeof WebglAddon === 'undefined') return;
-  if (!encender) { t.gpu.dispose(); t.gpu = null; return; }
+  if (!encender) { if ([...terminales.values()].filter((x) => x.gpu).length > GPU_MAX) { t.gpu.dispose(); t.gpu = null; } return; }
   try {
     const g = new WebglAddon.WebglAddon();
     // Si igual se pierde (GPU reiniciada, más de 16 a la vista), sigue con el dibujo normal ajustado a su celda.
     g.onContextLoss(() => { if (t.gpu !== g) return; t.gpu = null; g.dispose(); ajustar(id); });
     t.term.loadAddon(g);
     t.gpu = g;
+    t.escala = devicePixelRatio;
   } catch (e) { /* sin WebGL: dibujo normal */ }
 }
 // Al salir de pantalla completa o cambiar el tamaño de la ventana, repinta las terminales a la vista.
