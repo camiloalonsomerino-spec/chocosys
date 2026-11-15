@@ -368,11 +368,13 @@ function notificar(titulo, cuerpo, aElegir) {
 // sale sola cuando «k» termina, así que una sesión reabierta (cambio de modelo) nunca cae bajo un «k» atrasado. Si «k» no
 // alcanza a empezar en 15 s se cancela y la terminal se cierra igual; si empezó, su propio tope de 20 s lo corta.
 // conservar: 'ocupados' (lo que gasta CPU queda vivo), [] (corta todo) o la lista de preguntarCierre.
-function matarConArbol(s, p, conservar = 'ocupados') {
+// El tope de 15 s es solo para cambiar el modelo (conTope): al cerrar se espera siempre el turno, porque con muchas
+// sesiones (quitar una sala) las «k» en fila se cancelaban y sus MCP quedaban huérfanos (auditoría 13-11-2026, 13).
+function matarConArbol(s, p, conservar = 'ocupados', conTope = false) {
   const matar = () => { try { p.kill(); } catch (e) { /* ya cerró */ } };
   if (!s || !s.sessionId) { matar(); return; }
   const senal = {};
-  const tope = setTimeout(() => { if (!senal.empezo) { senal.cancelada = true; matar(); } }, 15000);
+  const tope = conTope ? setTimeout(() => { if (!senal.empezo) { senal.cancelada = true; matar(); } }, 15000) : null;
   recursos.cerrarArbol(s.sessionId, conservar, senal).then((r) => registrar('árbol cerrado', s.id, r.raices, r.cerrados, r.nombres, r.quedan ? 'quedan vivos: ' + r.quedan : ''))
     .catch((e) => registrar('árbol sin cerrar', s.id, e.message)).finally(() => { clearTimeout(tope); matar(); });
 }
@@ -2809,7 +2811,7 @@ function aplicarModelo(s, modelo, esfuerzo, conservar) {
   s.linea = null;
   registrar('modelo cambiado', s.id, s.modelo || '', s.esfuerzo || '');
   // Se reabre al salir el PTY, o sea después de cerrar el árbol: el claude.exe nuevo (mismo sessionId) no alcanza a caer.
-  matarConArbol(s, p, conservar);
+  matarConArbol(s, p, conservar, true);
 }
 ipcMain.handle('modelo:cambiar', (e, id, modelo, esfuerzo) => {
   const s = sesiones.get(id);
