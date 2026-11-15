@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chocosys · varias sesiones de Claude Code en una ventana</title>
+<meta name="description" content="App de escritorio para Windows que abre varias sesiones de Claude Code en terminales reales, las agrupa en espacios y te avisa cuál te necesita. Flujos con puertas que apruebas tú, central, tareas programadas y un CRM local.">
+<meta property="og:title" content="Chocosys">
+<meta property="og:description" content="Varias sesiones de Claude Code en terminales reales, en una sola ventana de Windows.">
+<meta property="og:image" content="https://camiloalonsomerino-spec.github.io/chocosys/sitio/img/inicio.webp">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="sitio/logo.svg" type="image/svg+xml">
+<style>
+/* Las fuentes de la app, servidas desde el repositorio: la página no pide nada a terceros. */
+@font-face { font-family: "Instrument Sans"; src: url("sitio/fuentes/instrument-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: "Caveat"; src: url("sitio/fuentes/caveat-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+
+/* Tema Brasa de la app (oscuro) y su variante clara, según el sistema de quien visita. */
+:root {
+  --fondo: #0b0a09;
+  --ventana: #14110f;
+  --hundido: #0e0c0a;
+  --linea: rgba(255, 236, 220, 0.10);
+  --tinta: #f1e9df;
+  --tinta-2: #b8ab9d;
+  --brasa: #f2662e;
+  --brasa-tinta: #1d0b03;
+  --brasa-hover: #ff7a45;
+  --acento: #ffb08a;
+  --hecho: #93d3a0;
+  --brasa-suave: rgba(242, 102, 46, 0.14);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --fondo: #f7f5f2;
+    --ventana: #ffffff;
+    --hundido: #efece8;
+    --linea: rgba(33, 29, 26, 0.12);
+    --tinta: #211d1a;
+    --tinta-2: #5a5148;
+    --brasa: #b8460f;
+    --brasa-tinta: #ffffff;
+    --brasa-hover: #a03c0c;
+    --acento: #a63f0d;
+    --hecho: #2a6f3f;
+    --brasa-suave: rgba(184, 70, 15, 0.10);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--fondo); color: var(--tinta); font: 400 17px/1.6 "Instrument Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--acento); text-underline-offset: 3px; }
+a:hover { color: var(--brasa-hover); }
+:focus-visible { outline: 2px solid var(--brasa); outline-offset: 3px; border-radius: 4px; }
+code, kbd, pre { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; font-size: 0.88em; }
+kbd { padding: 1px 6px; border: 1px solid var(--linea); border-radius: 6px; background: var(--hundido); white-space: nowrap; }
+
+.saltar { position: absolute; left: -999px; top: 8px; background: var(--brasa); color: var(--brasa-tinta); padding: 10px 14px; border-radius: 8px; z-index: 2; }
+.saltar:focus { left: 16px; }
+
+.ancho { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+/* Barra de arriba */
+.barra { border-bottom: 1px solid var(--linea); }
+.barra .ancho { display: flex; align-items: center; gap: 16px; min-height: 64px; flex-wrap: wrap; }
+.marca { display: flex; align-items: center; gap: 10px; color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 18px; }
+.marca img { width: 30px; height: 30px; }
+.barra nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 2px; }
+.barra nav a { color: var(--tinta-2); text-decoration: none; padding: 10px 8px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 8px; }
+@media (max-width: 520px) { .barra nav { margin-left: -6px; } .barra nav a { padding: 10px 6px; font-size: 15px; } }
+.barra nav a:hover { color: var(--tinta); background: var(--hundido); }
+
+/* La letra a mano: el mismo gesto de los títulos de la app (Inicio, el nombre de cada espacio). */
+.mano { font-family: "Caveat", "Segoe Print", cursive; font-weight: 700; color: var(--brasa); line-height: 1.05; }
+
+/* Portada */
+.portada { padding: 56px 0 28px; }
+.portada h1 { font-size: clamp(46px, 9vw, 84px); margin: 0 0 18px; max-width: 18ch; }
+.portada .bajada { font-size: clamp(18px, 2.4vw, 21px); max-width: 60ch; margin: 0 0 28px; }
+.acciones { display: flex; flex-wrap: wrap; gap: 12px; }
+.boton { display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid var(--linea); color: var(--tinta); background: var(--ventana); }
+.boton:hover { color: var(--tinta); border-color: var(--brasa); }
+.boton.principal { background: var(--brasa); color: var(--brasa-tinta); border-color: var(--brasa); }
+.boton.principal:hover { background: var(--brasa-hover); color: var(--brasa-tinta); }
+.nota { color: var(--tinta-2); font-size: 15px; margin: 14px 0 0; }
+
+/* Capturas: la sombra separa la ventana de la página, como en Windows. */
+figure { margin: 0; }
+.captura { border: 1px solid var(--linea); border-radius: 12px; overflow: hidden; background: var(--ventana); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); }
+figcaption { color: var(--tinta-2); font-size: 14px; margin-top: 10px; }
+.portada figure { margin-top: 44px; }
+
+section { padding: 64px 0; }
+section + section { border-top: 1px solid var(--linea); }
+h2 { font-size: clamp(36px, 6vw, 52px); margin: 0 0 20px; }
+h3 { font-size: 20px; margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.texto { max-width: 64ch; }
+
+/* El video (y su espacio mientras no llega): 16:9, del ancho del texto. */
+#video { padding-top: 40px; }
+.video-pronto, #video video { width: 100%; max-width: 860px; aspect-ratio: 16 / 9; border-radius: 12px; }
+#video video { display: block; background: #000; border: 1px solid var(--linea); }
+.video-pronto { display: grid; place-items: center; padding: 20px; border: 1px dashed var(--linea); background: var(--hundido); color: var(--tinta-2); text-align: center; }
+.video-pronto p { margin: 0; }
+
+/* Para quién: lista corrida, sin tarjetas. */
+.quienes { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.quienes li { padding: 8px 14px; border: 1px solid var(--linea); border-radius: 10px; background: var(--ventana); }
+
+/* Dos columnas: texto y figura. */
+.par { display: grid; gap: 28px; align-items: center; margin-top: 36px; }
+@media (min-width: 860px) { .par { grid-template-columns: 5fr 6fr; gap: 44px; } .par.al-reves > :first-child { order: 2; } }
+
+/* Maqueta de un flujo detenido en su puerta. */
+.flujo { border: 1px solid var(--linea); border-radius: 12px; background: var(--ventana); padding: 18px; }
+.flujo-titulo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 600; margin-bottom: 14px; }
+.flujo-titulo span { color: var(--tinta-2); font-weight: 400; font-size: 14px; }
+.etapas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.etapa { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 9px; background: var(--hundido); font-size: 15px; }
+.etapa .n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; border: 1px solid var(--linea); color: var(--tinta-2); }
+.etapa .estado { font-size: 13px; color: var(--tinta-2); }
+.etapa.hecha .estado { color: var(--hecho); }
+.etapa.puerta { border-color: var(--brasa); background: var(--brasa-suave); }
+.etapa.puerta .n { border-color: var(--brasa); color: var(--brasa); }
+.etapa.puerta .estado { color: var(--acento); font-weight: 600; }
+.etapa.espera { border-style: dashed; background: transparent; }
+.puerta-botones { display: flex; gap: 8px; margin: 12px 0 0 36px; flex-wrap: wrap; }
+.puerta-botones span { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--linea); font-size: 14px; }
+.puerta-botones span:first-child { background: var(--brasa); color: var(--brasa-tinta); border-color: var(--brasa); font-weight: 600; }
+
+/* Las demás partes: lista de definiciones a dos columnas, separadas por línea. */
+.partes { display: grid; gap: 0 44px; margin: 44px 0 0; }
+@media (min-width: 760px) { .partes { grid-template-columns: 1fr 1fr; } }
+.partes div { padding: 20px 0; border-top: 1px solid var(--linea); }
+.partes dt { font-weight: 600; font-size: 19px; margin-bottom: 4px; }
+.partes dd { margin: 0; color: var(--tinta); }
+.ademas { margin-top: 28px; color: var(--tinta-2); }
+
+/* Instalar */
+.pasos { counter-reset: paso; list-style: none; padding: 0; margin: 24px 0 0; max-width: 760px; }
+.pasos > li { counter-increment: paso; position: relative; padding: 0 0 26px 48px; }
+.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: -2px; font-family: "Caveat", cursive; font-weight: 700; font-size: 30px; color: var(--brasa); }
+pre { margin: 10px 0 0; padding: 14px 16px; background: var(--hundido); border: 1px solid var(--linea); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+.camino { margin-top: 18px; padding: 18px 20px; border: 1px dashed var(--linea); border-radius: 12px; max-width: 760px; }
+.camino h3 { margin-bottom: 8px; }
+.camino ul { margin: 0; padding-left: 20px; }
+
+/* Inglés */
+#en { background: var(--hundido); }
+
+footer { border-top: 1px solid var(--linea); padding: 28px 0 40px; color: var(--tinta-2); font-size: 15px; }
+footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+</style>
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
+<header class="barra">
+  <div class="ancho">
+    <a class="marca" href="#contenido"><img src="sitio/logo.svg" alt="" width="30" height="30">Chocosys</a>
+    <nav aria-label="Secciones">
+      <a href="#que-hace">Qué hace</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#en" lang="en">English</a>
+      <a href="https://github.com/camiloalonsomerino-spec/chocosys">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido">
+  <div class="portada">
+    <div class="ancho">
+      <h1 class="mano">Varias sesiones de Claude Code, una sola ventana.</h1>
+      <p class="bajada">Chocosys es una app de escritorio para Windows. Abre sesiones de Claude Code en terminales reales, las ordena en espacios sobre un lienzo y te avisa cuál te necesita. Para el trabajo que se repite, arma flujos que se detienen donde tú tienes que decidir.</p>
+      <div class="acciones">
+        <a class="boton principal" href="#instalar">Cómo instalarla</a>
+        <a class="boton" href="https://github.com/camiloalonsomerino-spec/chocosys">Ver el código en GitHub</a>
+      </div>
+      <p class="nota">Gratis y sin fines comerciales. Corre con tu propia cuenta de Claude Code.</p>
+      <figure>
+        <div class="captura"><img src="sitio/img/inicio.webp" width="1802" height="1020" alt="Pantalla de Inicio de Chocosys en tema oscuro: arriba las pestañas y el consumo de CPU, RAM y GPU; al centro los recuadros «Te necesitan» y «Flujos corriendo»; a la derecha la lista de lo que requiere atención hoy en el CRM; abajo la barra de comando."></div>
+        <figcaption>El Inicio, con el CRM de prueba que trae la app (captura real del 13-11-2026).</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <section id="video" aria-labelledby="t-video">
+    <div class="ancho">
+      <h2 class="mano" id="t-video">Míralo andando</h2>
+      <!-- Para poner el video: dejar el archivo en docs/sitio/video/ y cambiar el div.video-pronto por
+           <video controls preload="metadata" poster="sitio/img/inicio.webp" src="sitio/video/<archivo>.mp4"></video> -->
+      <div class="video-pronto" role="note">
+        <p>El video de presentación está en preparación.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="para-quien" aria-labelledby="t-para-quien">
+    <div class="ancho">
+      <h2 class="mano" id="t-para-quien">Para quién es</h2>
+      <div class="texto">
+        <p>Para quien ya usa Claude Code y tiene más de una cosa andando a la vez: una sesión ordena apuntes, otra revisa una planilla, otra espera que le respondas. En vez de diez terminales sueltas, las ves todas juntas y sabes cuál está trabajando, cuál terminó y cuál te hizo una pregunta.</p>
+        <p>Trabaja sobre las carpetas reales de tu computador, no sobre copias en otro lugar.</p>
+      </div>
+      <ul class="quienes" aria-label="Ejemplos de uso">
+        <li>Un estudiante con varios ramos</li>
+        <li>Alguien que estudia y emprende</li>
+        <li>Quien lleva un negocio chico</li>
+        <li>Un ingeniero que apaga incendios</li>
+        <li>Cualquiera con tareas sueltas</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="que-hace" aria-labelledby="t-que-hace">
+    <div class="ancho">
+      <h2 class="mano" id="t-que-hace">Qué hace</h2>
+
+      <div class="par">
+        <div>
+          <h3>Sesiones en terminales reales</h3>
+          <p>Cada sesión es una ventana con su propia terminal, la misma de Claude Code: puedes escribirle, leer lo que hace y moverla por el lienzo. Agrupas las ventanas en espacios (uno por proyecto, por ramo o por cliente), cada uno con su pestaña.</p>
+          <p>Si cierras la app, al abrirla de nuevo cada sesión retoma su conversación.</p>
+        </div>
+        <figure>
+          <div class="captura"><img src="img/fuentes-1-de-fabrica.png" width="830" height="470" loading="lazy" alt="Un espacio llamado «Fuentes» con una ventana de sesión sobre el lienzo; la terminal muestra un texto de muestra."></div>
+          <figcaption>Un espacio con una ventana de sesión. La terminal muestra un texto de muestra, no una sesión real.</figcaption>
+        </figure>
+      </div>
+
+      <div class="par al-reves">
+        <div>
+          <h3>Flujos con puertas que apruebas tú</h3>
+          <p>Un flujo es una receta en un archivo de texto: etapas en orden (o en paralelo), cada una con su instrucción y su modelo. Entre etapa y etapa puede haber una puerta, donde el flujo se detiene hasta que lo revisas.</p>
+          <p>Cuando lo que sigue no se deshace (enviar un correo, emitir un documento), la puerta es crítica. Se aprueba solo en la ventana: ninguna sesión puede aprobarla por ti. Para probar una receta sin riesgo, la lanzas en simulacro.</p>
+        </div>
+        <figure>
+          <div class="flujo" aria-hidden="true">
+            <div class="flujo-titulo">Informe de la semana <span>flujo detenido</span></div>
+            <ol class="etapas">
+              <li class="etapa hecha"><span class="n">1</span><span>Escribir el informe · haiku</span><span class="estado">listo</span></li>
+              <li class="etapa hecha"><span class="n">2</span><span>Guardarlo en la carpeta del trabajo</span><span class="estado">listo</span></li>
+              <li class="etapa hecha"><span class="n">3</span><span>Anotarlo en el CRM</span><span class="estado">listo</span></li>
+              <li class="etapa puerta"><span class="n">!</span><span>Puerta crítica: revisar el informe antes de enviarlo</span><span class="estado">te espera</span></li>
+              <li class="etapa espera"><span class="n">5</span><span>Enviar el correo</span><span class="estado">pendiente</span></li>
+            </ol>
+            <div class="puerta-botones"><span>Aprobar y seguir</span><span>Pedir cambios</span></div>
+          </div>
+          <figcaption>Maqueta en HTML, armada con la receta de ejemplo que trae la app (datos inventados). En la app, la puerta muestra los archivos que tienes que revisar.</figcaption>
+        </figure>
+      </div>
+
+      <dl class="partes">
+        <div>
+          <dt>La bandeja</dt>
+          <dd>Junta lo que te necesita primero: una pregunta, una puerta, una sesión que terminó. <kbd>Ctrl+Tab</kbd> salta a lo siguiente.</dd>
+        </div>
+        <div>
+          <dt>La central</dt>
+          <dd>Si la activas, una sesión que Chocosys abre al iniciar y queda siempre a mano, también desde el celular con Remote Control. Le pides un encargo y ella reparte el trabajo en las sesiones que hagan falta, y te avisa cuando termina.</dd>
+        </div>
+        <div>
+          <dt>Tareas programadas</dt>
+          <dd>Una orden, una sesión nueva o un flujo que corre a una hora, una vez o cada cierto tiempo. Decides si una tarea atrasada se corre al abrir la app o se salta.</dd>
+        </div>
+        <div>
+          <dt>CRM básico</dt>
+          <dd>Empresas, contactos, negocios en un embudo y actividades con su fecha. Trae plantillas de embudo según el tipo de negocio y guarda todo en una base local, en tu computador.</dd>
+        </div>
+        <div>
+          <dt>Barra de comando</dt>
+          <dd><kbd>Ctrl+Shift+K</kbd>: una orden abre una sesión nueva; <code>@nombre: orden</code> le escribe a una que ya existe.</dd>
+        </div>
+        <div>
+          <dt>Segunda opinión</dt>
+          <dd>Asesores con intereses distintos (caja, riesgo, operación) evalúan una decisión, se confrontan y entregan un veredicto.</dd>
+        </div>
+      </dl>
+      <p class="ademas">Además: CPU, RAM y GPU con lo que consume cada sesión; un servidor MCP para que una sesión lea el estado, abra otras y lance flujos (aprobar puertas, no); <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/docs/fuentes.md">fuentes propias</a> para la interfaz y la terminal; y dos ediciones livianas, solo terminales o terminales con flujos.</p>
+    </div>
+  </section>
+
+  <section id="datos" aria-labelledby="t-datos">
+    <div class="ancho">
+      <h2 class="mano" id="t-datos">Tus datos</h2>
+      <div class="texto">
+        <p>Chocosys no tiene servidor y no envía nada por su cuenta. Lo que guarda (sesiones, espacios, CRM, tareas) queda en tu computador, en <code>%APPDATA%\consola-agentes\</code>. Lo que escribes en una sesión viaja a Claude como en cualquier terminal de Claude Code.</p>
+        <p>Si algo falla, la app arma un reporte con rutas, correos y claves tachados. Lo revisas y lo envías tú, si quieres.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="instalar" aria-labelledby="t-instalar">
+    <div class="ancho">
+      <h2 class="mano" id="t-instalar">Cómo instalarla</h2>
+      <p class="texto">Hoy funciona en Windows 10 y 11, y se abre desde el código.</p>
+      <ol class="pasos">
+        <li>
+          <h3>Lo que necesitas antes</h3>
+          <p><a href="https://nodejs.org">Node.js</a> 20 o más nuevo, y <a href="https://docs.anthropic.com/claude-code">Claude Code</a> instalado y con tu sesión iniciada: el comando <code>claude</code> tiene que abrir en una terminal.</p>
+        </li>
+        <li>
+          <h3>Baja el código</h3>
+          <p>Con Git, o con el botón <em>Code › Download ZIP</em> del repositorio.</p>
+<pre><code>git clone https://github.com/camiloalonsomerino-spec/chocosys.git</code></pre>
+        </li>
+        <li>
+          <h3>Instala y abre</h3>
+<pre><code>cd chocosys\app
+npm install
+npm start</code></pre>
+          <p class="nota">Para tener un instalador <code>.exe</code> propio: <code>npm run instalador</code>.</p>
+        </li>
+      </ol>
+      <div class="camino">
+        <h3>En camino</h3>
+        <ul>
+          <li>Una versión para Mac.</li>
+          <li>Elegir tu plan de Claude (Pro o Max) desde la app.</li>
+        </ul>
+        <p class="nota">Sin fecha todavía. Los avances quedan en el <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/CHANGELOG.md">registro de cambios</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="licencia" aria-labelledby="t-licencia">
+    <div class="ancho">
+      <h2 class="mano" id="t-licencia">Licencia</h2>
+      <div class="texto">
+        <p>Chocosys es un proyecto sin fines comerciales. Puedes usarla, estudiarla, copiarla y cambiarla para fines personales, de estudio, de investigación o de una organización sin fines de lucro. Para un uso comercial hay que pedir permiso.</p>
+        <p>La licencia es la <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>. Por esa condición no es «open source» según la OSI: el código está abierto para leerlo y cambiarlo, pero no para venderlo. Detalle en el <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/AVISO.md">aviso</a>.</p>
+        <p>¿Encontraste un fallo o tienes una idea? <a href="https://github.com/camiloalonsomerino-spec/chocosys/issues/new/choose">Abre un issue</a> con texto y capturas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="en" lang="en" aria-labelledby="t-en">
+    <div class="ancho">
+      <h2 class="mano" id="t-en">In English</h2>
+      <div class="texto">
+        <p>Chocosys is a Windows desktop app that runs several Claude Code sessions in real terminals, groups them into spaces on a canvas and tells you which one needs you. It adds flows (YAML recipes with stages and gates you approve in the window), a central session that splits work across sessions, scheduled tasks and a small local CRM. The interface is in Spanish.</p>
+        <p>It needs Windows 10 or 11, Node.js 20+ and Claude Code signed in. Clone the repository, then run <code>npm install</code> and <code>npm start</code> inside <code>app</code>. A Mac version and choosing your Claude plan (Pro or Max) in the app are on the way, with no date yet.</p>
+        <p>Non-commercial project under the <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a> license. <a href="https://github.com/camiloalonsomerino-spec/chocosys">Source on GitHub</a>.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="ancho">
+    <span>Chocosys · sin fines comerciales · PolyForm Noncommercial 1.0.0</span>
+    <a href="https://github.com/camiloalonsomerino-spec/chocosys">Repositorio</a>
+    <span>Tipografías Instrument Sans y Caveat (SIL OFL 1.1)</span>
+  </div>
+</footer>
+</body>
+</html>
