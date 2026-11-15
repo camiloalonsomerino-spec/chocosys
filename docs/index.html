@@ -245,7 +245,10 @@ pre { margin: 10px 0 0; padding: 14px 16px; background: var(--hundido); border: 
 #so-detectado { margin: -4px 0 12px; }
 pre.pegar { margin: 0 0 12px; font-size: 14px; max-height: none; }
 .copiado { margin-left: 10px; color: var(--hecho); font-weight: 600; }
-.pegar-pronto { margin: 0; padding: 16px 18px; border: 1px dashed var(--linea-fuerte); border-radius: 12px; color: var(--tinta-2); }
+.pegar-pronto { margin: 0; padding: 16px 18px; border: 1px dashed var(--linea-fuerte); border-radius: 12px; }
+.pegar-pronto p { margin: 0 0 10px; }
+.pegar-pronto p:last-child { margin-bottom: 0; }
+.pegar-pronto pre { margin: 0 0 10px; }
 .a-mano { margin: 44px 0 0; font-size: 22px; }
 
 /* Seguridad */
@@ -418,6 +421,10 @@ footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
           <dd><kbd>Ctrl+Shift+K</kbd>: una orden abre una sesión nueva; <code>@nombre: orden</code> le escribe a una que ya existe.</dd>
         </div>
         <div class="revelar d1">
+          <dt>Mi plan</dt>
+          <dd>Al primer inicio eliges tu suscripción de Claude Code (Pro, Max 5x, Max 20x, API o sin límites), y la app ajusta cuántas sesiones trabajan a la vez y con qué modelo. Todo se puede subir a conciencia.</dd>
+        </div>
+        <div class="revelar">
           <dt>Segunda opinión</dt>
           <dd>Asesores con intereses distintos (caja, riesgo, operación) evalúan una decisión, se confrontan y entregan un veredicto.</dd>
         </div>
@@ -482,8 +489,15 @@ footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
           <span class="copiado" role="status"></span>
         </div>
         <div role="tabpanel" id="v-mac" aria-labelledby="p-mac" hidden>
-          <!-- Cuando esté el instalador de Mac: poner aquí un <pre class="pegar" id="texto-mac"> con su texto y un botón .copiar con data-copiar="texto-mac", igual que en Windows. -->
-          <p class="pegar-pronto">La versión para Mac está en beta y su texto de instalación todavía no está publicado. Cuando lo esté, aparecerá aquí; los avances quedan en el <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/CHANGELOG.md">registro de cambios</a>.</p>
+          <div class="pegar-pronto">
+            <p><strong>En prueba:</strong> el código corre en macOS, pero todavía no se probó en un Mac real. No hay <code>.dmg</code> publicado.</p>
+            <p>Se arma en un Mac:</p>
+<pre>cd app
+npm ci
+npm run instalador -- --mac --adhoc</pre>
+            <p>o en GitHub, con el flujo <a href="https://github.com/camiloalonsomerino-spec/chocosys/actions/workflows/mac.yml">«Instalador de macOS»</a>. Sin cuenta de Apple Developer, la primera vez se abre en Ajustes del Sistema › Privacidad y seguridad › «Abrir igualmente». Los atajos van con <kbd>Cmd+Shift</kbd>.</p>
+            <p>Guía completa: <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/docs/mac.md">docs/mac.md</a>.</p>
+          </div>
         </div>
       </div>
 
@@ -509,8 +523,7 @@ npm start</code></pre>
       <div class="camino revelar">
         <h3>En camino</h3>
         <ul>
-          <li>El instalador de la versión para Mac (beta).</li>
-          <li>Elegir tu plan de Claude (Pro o Max) desde la app.</li>
+          <li>Probar la versión para Mac (beta) en un Mac real y publicar su <code>.dmg</code>.</li>
         </ul>
         <p class="nota">Sin fecha todavía. Los avances quedan en el <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/CHANGELOG.md">registro de cambios</a>.</p>
       </div>
@@ -522,7 +535,7 @@ npm start</code></pre>
       <h2 class="revelar" id="t-seguridad">Revísala antes de confiar en ella.</h2>
       <div class="texto revelar">
         <p>Chocosys corre Claude Code en tu computador, así que conviene saber qué hace. Revisarla es gratis: todo el código está en <a href="https://github.com/camiloalonsomerino-spec/chocosys">GitHub</a>, la app no tiene servidor y no envía nada por su cuenta. Lo que más vale mirar es cómo abre las sesiones (<code>app/main.js</code>) y el servidor MCP (<code>app/mcp/</code>).</p>
-        <p>Si encuentras algo importante (una forma de ejecutar código, de sacar datos o de aprobar una puerta sin pasar por la ventana), no lo publiques en un issue: repórtalo en privado con <a href="https://github.com/camiloalonsomerino-spec/chocosys/security/advisories/new">«Report a vulnerability»</a>, en la pestaña Security del repositorio. Un fallo común sí va en un issue.</p>
+        <p>Si encuentras algo importante (una forma de ejecutar código, de sacar datos o de aprobar una puerta sin pasar por la ventana), no lo publiques en un issue: repórtalo en privado con <a href="https://github.com/camiloalonsomerino-spec/chocosys/security/advisories/new">«Report a vulnerability»</a>, en la pestaña Security del repositorio (detalle en <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/SECURITY.md">SECURITY.md</a>). Un fallo común sí va en un issue.</p>
       </div>
       <p class="gracias mano revelar d1">Si la revisas y te parece segura: gracias. Esa revisión es la mejor ayuda que puede recibir.</p>
     </div>
@@ -544,7 +557,7 @@ npm start</code></pre>
       <h2 class="revelar" id="t-en">In English.</h2>
       <div class="texto revelar">
         <p>Chocosys is a Windows desktop app that runs several Claude Code sessions in real terminals, groups them into spaces on a canvas and tells you which one needs you. It adds flows (YAML recipes with stages and gates you approve in the window), a central session that splits work across sessions, scheduled tasks and a small local CRM. The interface is in Spanish.</p>
-        <p>It needs Windows 10 or 11, Node.js 20+ and Claude Code signed in. Clone the repository, then run <code>npm install</code> and <code>npm start</code> inside <code>app</code>. You can also paste the install text above into Claude Code. The Mac version is in beta; its installer and choosing your Claude plan (Pro or Max) in the app are on the way, with no date yet. To report a security issue privately, use «Report a vulnerability» in the repository's Security tab.</p>
+        <p>It needs Windows 10 or 11, Node.js 20+ and Claude Code signed in. Clone the repository, then run <code>npm install</code> and <code>npm start</code> inside <code>app</code>. You can also paste the install text above into Claude Code. The Mac version is in beta: the code runs on macOS but has not been tested on a real Mac yet, and there is no published .dmg (docs/mac.md explains how to build one). To report a security issue privately, use «Report a vulnerability» in the repository's Security tab.</p>
         <p>Non-commercial project under the <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a> license. <a href="https://github.com/camiloalonsomerino-spec/chocosys">Source on GitHub</a>.</p>
       </div>
     </div>
