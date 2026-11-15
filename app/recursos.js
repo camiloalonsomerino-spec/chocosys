@@ -455,4 +455,4 @@ async function calculoVivo(sessionIds) {
   return m;
 }
 
-module.exports = { APLICACIONES, medirTotales, totales, cpuMedia, foto, agrupar, costoPropio, configurar, cerrarArbol, calculoVivo, pidPs: () => (ps ? ps.pid : 0), parar: pararPs };
+module.exports = { APLICACIONES, UUID, medirTotales, totales, cpuMedia, foto, agrupar, costoPropio, configurar, cerrarArbol, calculoVivo, pidPs: () => (ps ? ps.pid : 0), parar: pararPs };

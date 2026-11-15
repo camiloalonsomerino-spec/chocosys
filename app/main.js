@@ -283,7 +283,7 @@ function guardarYa() {
   clearTimeout(guardadoPendiente);
   guardadoPendiente = null;
   try {
-    const lista = [...sesiones.values()].map((s) => Object.assign(publica(s), { sessionId: s.sessionId, instruccion: s.instruccion || '' }, s.guiaEntorno ? { guiaEntorno: s.guiaEntorno } : {}, s.turnos ? { turnos: s.turnos } : {}, s.entrevista ? { entrevista: s.entrevista } : {}));
+    const lista = [...sesiones.values()].map((s) => Object.assign(publica(s), { sessionId: s.sessionId, instruccion: s.instruccion || '' }, s.conversacion ? { conversacion: s.conversacion } : {}, s.guiaEntorno ? { guiaEntorno: s.guiaEntorno } : {}, s.turnos ? { turnos: s.turnos } : {}, s.entrevista ? { entrevista: s.entrevista } : {}));
     const texto = JSON.stringify({ sesiones: lista, flujos: motor.guardable(), espacios, espacioActual }, null, 2);
     const temporal = ARCHIVO_ESTADO + '.tmp';
     fs.writeFileSync(temporal, texto, 'utf8');
@@ -295,6 +295,12 @@ function guardar() {
   clearTimeout(guardadoPendiente);
   guardadoPendiente = setTimeout(guardarYa, 300);
 }
+
+// Tras /clear o /resume Claude Code sigue en otra conversación: «conversacion» es la vigente y sessionId, la que lleva
+// el proceso en su línea de comando (por ella lo reconoce recursos).
+const conversacionDe = (s) => s.conversacion || s.sessionId;
+// Dos sesiones con el mismo identificador partirían con la misma línea de comando, y cerrar una cerraría a la otra.
+const laTieneOtra = (s, id) => [...sesiones.values()].some((x) => x !== s && (x.sessionId === id || x.conversacion === id));
 
 function publica(s) {
   return {
@@ -477,6 +483,12 @@ function alHook(m) {
   }
   // El registro de la sesión (para la lista «trabajando» y los subagentes): lo dice cualquier aviso de la sesión madre, no los de sus subagentes.
   if (d.transcript_path && !d.agent_id) s.transcript = d.transcript_path;
+  // PostToolUse llega en segundo plano y puede caer después de un /clear con la conversación anterior: no cuenta.
+  if (!d.agent_id && m.evento !== 'PostToolUse' && recursos.UUID.test(d.session_id) && d.session_id !== conversacionDe(s) && !laTieneOtra(s, d.session_id)) {
+    s.conversacion = d.session_id;
+    registrar('conversación', s.id, d.session_id, d.source || '');
+    guardar();
+  }
   // Para saber si una sesión de una orquesta se trabó: cualquier aviso cuenta como movimiento.
   s.actividad = Date.now();
   s.avisadaTrabada = false;
@@ -754,6 +766,7 @@ function abrir(id, cols, rows) {
     return;
   }
   const retomando = !!s.iniciada;
+  if (retomando) s.sessionId = conversacionDe(s);
   const args = retomando ? ['--resume', s.sessionId] : ['--session-id', s.sessionId];
   args.push('--settings', ARCHIVO_HOOKS);
   // Lite: con el perfil MCP encendido, solo los servidores de su perfil. Va antes del «--»: --mcp-config acepta varios valores.
@@ -2376,7 +2389,7 @@ function registroDe(s) {
   if (!s.sessionId || !s.iniciada) return null;
   try {
     for (const d of fs.readdirSync(CARPETA_PROYECTOS)) {
-      const f = path.join(CARPETA_PROYECTOS, d, s.sessionId + '.jsonl');
+      const f = path.join(CARPETA_PROYECTOS, d, conversacionDe(s) + '.jsonl');
       if (fs.existsSync(f)) return (s.transcript = f);
     }
   } catch (e) { /* sin carpeta de proyectos */ }
@@ -2810,7 +2823,7 @@ function aplicarModelo(s, modelo, esfuerzo, conservar) {
   escribirCorrida(s);
   s.linea = null;
   registrar('modelo cambiado', s.id, s.modelo || '', s.esfuerzo || '');
-  // Se reabre al salir el PTY, o sea después de cerrar el árbol: el claude.exe nuevo (mismo sessionId) no alcanza a caer.
+  // Se reabre al salir el PTY, o sea después de cerrar el árbol: el claude.exe nuevo no alcanza a caer.
   matarConArbol(s, p, conservar, true);
 }
 ipcMain.handle('modelo:cambiar', (e, id, modelo, esfuerzo) => {
@@ -2939,7 +2952,7 @@ ipcMain.handle('sesion:transcripciones', (e, ids) => (Array.isArray(ids) ? ids :
   const s = sesiones.get(id);
   if (!s) return null;
   const carpetaProyecto = path.join(app.getPath('home'), '.claude', 'projects', String(s.carpeta || '').replace(/[^A-Za-z0-9]/g, '-'));
-  const ruta = path.join(carpetaProyecto, s.sessionId + '.jsonl');
+  const ruta = path.join(carpetaProyecto, conversacionDe(s) + '.jsonl');
   return { id, nombre: s.nombre, carpeta: s.carpeta, ruta, existe: fs.existsSync(ruta), carpetaProyecto };
 }).filter(Boolean));
 
