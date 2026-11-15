@@ -19,7 +19,7 @@ function dialogo({ titulo, nota, cuerpo, pie }) {
     if (e.key === 'Escape') { e.stopPropagation(); cerrar(); return; }
     if (e.key !== 'Tab') return;
     // Retiene el foco: Tab no sale del diálogo a los botones de atrás; de la última vuelve a la primera y al revés.
-    const f = [...caja.querySelectorAll('button:not([disabled]), input, textarea')].filter((x) => !x.closest('[hidden]'));
+    const f = [...caja.querySelectorAll('button:not([disabled]), input, select, textarea')].filter((x) => !x.closest('[hidden]'));
     const i = f.indexOf(document.activeElement);
     if (f.length && (i < 0 || (e.shiftKey ? i === 0 : i === f.length - 1))) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); }
   };
@@ -108,6 +108,103 @@ async function mostrarSobreMi(primeraVez) {
   if (primeraVez) await bApi.bienvenida.marcar('sobre_mi_preguntado');
 }
 
+// ── Mi plan (15-11-2026) ──
+// Chocosys no ve la cuenta de Claude: quien usa la app dice qué plan tiene y cuánto abre a la vez. Elegir un plan llena los
+// campos con lo de fábrica (plan.js); cada campo se puede subir a conciencia y el aviso dice qué quedó sobre lo de fábrica.
+const P_MODELOS = ['haiku', 'sonnet', 'opus'];
+const P_ESFUERZOS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const NOMBRE_MODELO = { '': 'El de Claude Code', haiku: 'Haiku', sonnet: 'Sonnet', opus: 'Opus' };
+const NOMBRE_ESFUERZO = { '': 'El de Claude Code', low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' };
+const ORDEN_PLANES = ['pro', 'max5', 'max20', 'api', 'libre'];
+
+function resumenPlan(p) {
+  const a = p.sesiones ? `${p.sesiones} sesiones a la vez` : 'sin tope de sesiones';
+  const m = p.modelo ? `${NOMBRE_MODELO[p.modelo]} en ${p.esfuerzo || 'su esfuerzo'}` : 'el modelo de Claude Code';
+  const tope = p.modelo_max === 'opus' ? '' : `, nada sobre ${NOMBRE_MODELO[p.modelo_max]}`;
+  return `${a}, ${m}${tope}${p.sala ? '' : ', sin Segunda opinión'}.`;
+}
+
+async function mostrarPlan(primeraVez) {
+  const { planes, actual } = await bApi.plan.leer();
+  const elegir = (lista, nombres, valor) => {
+    const s = h('select', { class: 'entrada-simple' }, lista.map((v) => h('option', { value: v }, nombres[v])));
+    s.value = valor;
+    return s;
+  };
+  const numero = (min, max) => h('input', { class: 'entrada-simple', type: 'number', min, max, step: 1, inputmode: 'numeric' });
+  const campos = {
+    sesiones: numero(0, 12), agentes: numero(1, 6), programadas: numero(0, 50),
+    modelo: elegir(['', ...P_MODELOS], NOMBRE_MODELO, ''), esfuerzo: elegir(['', ...P_ESFUERZOS], NOMBRE_ESFUERZO, ''),
+    modelo_max: elegir(P_MODELOS, NOMBRE_MODELO, 'opus'), esfuerzo_max: elegir(P_ESFUERZOS, NOMBRE_ESFUERZO, 'max')
+  };
+  const sala = casilla('Segunda opinión (sala directiva): abre una sesión por asesor a la vez', false);
+  const fila = (rotulo, el, nota) => h('label', { class: 'campo' }, h('span', { class: 'rotulo' }, rotulo), el, nota ? h('span', { class: 'dialogo-aviso' }, nota) : null);
+  let tipo = actual.tipo;
+  const llenar = (p) => {
+    for (const k of Object.keys(campos)) campos[k].value = String(p[k]);
+    sala.input.checked = !!p.sala;
+  };
+  const leerCampos = () => {
+    const d = { tipo };
+    for (const k of ['sesiones', 'agentes', 'programadas']) d[k] = Number(campos[k].value);
+    for (const k of ['modelo', 'esfuerzo', 'modelo_max', 'esfuerzo_max']) d[k] = campos[k].value;
+    d.sala = sala.input.checked;
+    return d;
+  };
+  // Lo que quedó sobre lo de fábrica del plan elegido, para decirlo antes de guardar.
+  const aviso = h('p', { class: 'dialogo-aviso plan-aviso', role: 'status' });
+  const revisar = () => {
+    const f = planes[tipo], d = leerCampos(), sobre = [];
+    const mas = (v, fab) => (fab === 0 ? false : v === 0 || v > fab);
+    if (mas(d.sesiones, f.sesiones)) sobre.push(`sesiones a la vez (${d.sesiones || 'sin tope'})`);
+    if (P_MODELOS.indexOf(d.modelo) > P_MODELOS.indexOf(f.modelo) || P_MODELOS.indexOf(d.modelo_max) > P_MODELOS.indexOf(f.modelo_max)) sobre.push('modelo');
+    if (P_ESFUERZOS.indexOf(d.esfuerzo) > P_ESFUERZOS.indexOf(f.esfuerzo) || P_ESFUERZOS.indexOf(d.esfuerzo_max) > P_ESFUERZOS.indexOf(f.esfuerzo_max)) sobre.push('esfuerzo');
+    if (d.agentes > f.agentes) sobre.push(`agentes por etapa (${d.agentes})`);
+    if (mas(d.programadas, f.programadas)) sobre.push(`tareas programadas (${d.programadas || 'sin tope'})`);
+    if (d.sala && !f.sala) sobre.push('Segunda opinión');
+    aviso.textContent = sobre.length ? `Sobre lo de fábrica de ${f.nombre}: ${sobre.join(', ')}. Con esto el límite de uso se acaba antes.` : '';
+    aviso.hidden = !sobre.length;
+  };
+  const opciones = ORDEN_PLANES.map((k) => {
+    const radio = h('input', { type: 'radio', name: 'plan-tipo', value: k, onchange: () => { tipo = k; llenar(planes[k]); revisar(); } });
+    radio.checked = k === tipo;
+    return h('label', { class: 'casilla-simple plan-opcion' }, radio,
+      h('span', {}, h('b', {}, planes[k].nombre), h('span', { class: 'dialogo-aviso' }, ' · ' + resumenPlan(planes[k]))));
+  });
+  llenar(actual);
+  revisar();
+  for (const el of [...Object.values(campos), sala.input]) el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', revisar);
+  const estado = h('span', { class: 'modal-resumen', role: 'status' });
+  const guardar = async () => {
+    const r = await bApi.plan.guardar(leerCampos()).catch((e) => ({ ok: false, motivo: e.message }));
+    if (!r.ok) { estado.textContent = 'No se guardó: ' + r.motivo; return; }
+    d.cerrar(true);
+  };
+  const d = dialogo({
+    titulo: 'Mi plan',
+    nota: 'Chocosys no ve tu cuenta de Claude: dile qué plan tienes y cuánto puede abrir a la vez.',
+    cuerpo: [
+      h('fieldset', { class: 'plan-grupo' }, h('legend', { class: 'rotulo' }, 'Tu suscripción de Claude Code'), opciones),
+      h('fieldset', { class: 'plan-grupo plan-ajustes' }, h('legend', { class: 'rotulo' }, 'Lo que Chocosys abre con ese plan'),
+        fila('Sesiones trabajando a la vez', campos.sesiones, 'Cuentan la central y las de flujos. 0 = sin tope.'),
+        fila('Agentes por etapa de un flujo', campos.agentes),
+        fila('Modelo de una sesión nueva', campos.modelo),
+        fila('Esfuerzo de una sesión nueva', campos.esfuerzo),
+        fila('Modelo máximo', campos.modelo_max, 'Una etapa que pide uno más alto corre en este.'),
+        fila('Esfuerzo máximo', campos.esfuerzo_max),
+        fila('Tareas programadas guardadas', campos.programadas, '0 = sin tope.'),
+        sala.el),
+      aviso,
+      h('p', { class: 'dialogo-aviso' }, 'Se guarda en perfil.json, en la carpeta de datos de Chocosys. Sobre el tope, abrir una sesión desde la ventana te pregunta antes; las sesiones que abren otras no pueden pasarlo.')],
+    pie: [estado,
+      boton(primeraVez ? 'Ahora no (sin límites)' : 'Cancelar', () => d.cerrar(false)),
+      boton('Volver a lo de fábrica', () => { llenar(planes[tipo]); revisar(); }),
+      boton('Guardar plan', guardar, 'principal')]
+  });
+  await d.fin;
+  if (primeraVez) await bApi.bienvenida.marcar('plan_elegido');
+}
+
 // ── Reportar un fallo ──
 async function reportarFallo() {
   // La captura va antes del diálogo, para que muestre la pantalla del fallo y no el formulario.
@@ -174,6 +271,7 @@ async function mostrarReporteGuardado({ carpeta, instagram }) {
 
 $('#acerca-de').addEventListener('click', () => mostrarCreditos(false));
 $('#sobre-mi').addEventListener('click', () => mostrarSobreMi(false));
+$('#mi-plan').addEventListener('click', () => mostrarPlan(false));
 $('#reportar-fallo').addEventListener('click', () => reportarFallo());
 
 // Al abrir: los créditos la primera vez y, después, la pregunta del «sobre mí» (también una sola vez).
@@ -181,6 +279,7 @@ $('#reportar-fallo').addEventListener('click', () => reportarFallo());
   try {
     const m = await bApi.bienvenida.marcas();
     if (!m.creditos_vistos) await mostrarCreditos(true);
+    if (!m.plan_elegido) await mostrarPlan(true);
     if (!m.sobre_mi_preguntado) await mostrarSobreMi(true);
   } catch (e) { console.warn('bienvenida:', e.message); }
   // Después, la revisión de instalación de app.js (antes partía sola a los 1,5 s y tapaba los créditos).

@@ -251,6 +251,8 @@ function pararPs() { clearTimeout(relojOcioso); if (ps) { try { ps.kill(); } cat
 // Una pregunta a la vez; sin preguntas por 2 min, el PowerShell se cierra (no ocupa memoria si nadie mira).
 // «senal» (la usa «k»): si al llegar su turno ya está cancelada, no se envía; si empezó, queda marcada.
 function pedirPs(orden, senal) {
+  // macOS: las mismas órdenes y el mismo JSON, leídos con ps (procesos-unix.js). Sin proceso vivo que cuidar.
+  if (process.platform !== 'win32') return require('./procesos-unix').pedir(orden, senal);
   if (enCola.has(orden)) return enCola.get(orden);
   const tarea = cola.then(() => new Promise((ok, mal) => {
     enCola.delete(orden);

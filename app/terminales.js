@@ -5,6 +5,7 @@
 // cerrar o reiniciar Chocosys no corte a las sesiones: al volver, la consola se conecta de nuevo y las encuentra vivas.
 // Idea del demonio orcad de Orca (MIT, stablyai/orca), en chico. Habla por un tubo con mensajes JSON, uno por línea.
 // Sin consola conectada por ESPERA_MS, cierra todo y se va. Si se cae, Windows cierra sus hijos (trabajo-windows.ps1).
+// En macOS el tubo es un socket Unix (plataforma.js) y node-pty usa forkpty en vez de ConPTY.
 
 const net = require('net');
 const path = require('path');
@@ -17,10 +18,17 @@ const terminales = new Map();
 let cliente = null;
 let reloj = null;
 
-try {
-  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
-    path.join(__dirname, 'trabajo-windows.ps1'), '-Proceso', String(process.pid)], { windowsHide: true, timeout: 20000 });
-} catch (e) { /* sin trabajo: si este proceso se cae, sus hijos quedan como antes y la consola los cierra al abrir */ }
+// En macOS no hace falta: si este proceso se cae, se cierra el lado maestro de cada PTY y sus claude reciben SIGHUP.
+if (process.platform === 'win32') {
+  try {
+    execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
+      path.join(__dirname, 'trabajo-windows.ps1'), '-Proceso', String(process.pid)], { windowsHide: true, timeout: 20000 });
+  } catch (e) { /* sin trabajo: si este proceso se cae, sus hijos quedan como antes y la consola los cierra al abrir */ }
+} else {
+  // Un socket Unix que quedó de un dueño caído impide escuchar (EADDRINUSE). La consola lanza este proceso solo cuando no
+  // pudo conectarse a ese socket, así que nadie lo atiende.
+  try { require('fs').unlinkSync(TUBO); } catch (e) { /* no había */ }
+}
 
 function enviar(m) { if (cliente) cliente.write(JSON.stringify(m) + '\n'); }
 
@@ -52,7 +60,7 @@ function atender(m) {
   else if (m.tipo === 'matar' && t) { try { t.proceso.kill(); } catch (e) { /* ya cerró */ } }
 }
 
-net.createServer((sock) => {
+const servidor = net.createServer((sock) => {
   // Una sola consola a la vez: la que llega reemplaza a la anterior.
   if (cliente) cliente.destroy();
   cliente = sock;
@@ -71,4 +79,9 @@ net.createServer((sock) => {
   sock.on('error', () => {});
   sock.on('close', () => { if (cliente === sock) { cliente = null; esperarConsola(); } });
   enviar({ tipo: 'hola', pid: process.pid, terminales: [...terminales].map(([id, t]) => ({ id, cols: t.cols, rows: t.rows })) });
-}).listen(TUBO, esperarConsola);
+});
+// Fuera de Windows el socket nace solo para su dueño (0600): quien se conecta puede pedir abrir un programa, y en Linux
+// /tmp es de todos. La máscara se devuelve al tiro (el bind es síncrono), para que las sesiones creen archivos como siempre.
+const mascara = process.platform === 'win32' ? null : process.umask(0o077);
+servidor.listen(TUBO, esperarConsola);
+if (mascara !== null) process.umask(mascara);

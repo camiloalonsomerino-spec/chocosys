@@ -1,0 +1,47 @@
+# Arma el .dmg de Chocosys para macOS en un Mac de GitHub. Se lanza a mano (pestaña Actions › «Instalador de macOS» ›
+# Run workflow); no corre con cada push ni publica nada: deja los .dmg como artefacto de la corrida.
+#
+# Firma: sin secretos sale firmada ad-hoc; la primera vez macOS la bloquea y se abre en Ajustes del Sistema › Privacidad y
+# seguridad › «Abrir igualmente». Con una cuenta de Apple Developer, agregar en Settings › Secrets: CSC_LINK (el .p12 en base64),
+# CSC_KEY_PASSWORD, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD y APPLE_TEAM_ID; ahí sale firmada y notarizada.
+name: Instalador de macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dmg:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      # Acciones fijadas por hash (el trabajo maneja los secretos de firma): una etiqueta movida no cambia lo que corre.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci
+      # npm instala node-pty solo para la arquitectura del Mac que arma (arm64); el de Intel se agrega a la fuerza.
+      - run: npm install --no-save --force @lydell/node-pty-darwin-x64@1.2.0-beta.15
+      - run: npm run probar
+      - name: Armar (firma ad-hoc si no hay certificado)
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$CSC_LINK" ]; then unset CSC_LINK CSC_KEY_PASSWORD; FIRMA=--adhoc; export CSC_IDENTITY_AUTO_DISCOVERY=false; fi
+          node scripts/instalador.js --mac --arm64 --x64 $FIRMA
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: chocosys-macos
+          path: dist/*.dmg
+          if-no-files-found: error

@@ -4,7 +4,7 @@
 // Proceso principal: una PTY por sesión de Claude Code, el servidor local que recibe
 // los hooks y el estado que se guarda al cerrar. La ventana solo dibuja.
 
-const { app, BrowserWindow, ipcMain, dialog, Notification, clipboard, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, clipboard, shell, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -19,6 +19,11 @@ const tipografia = require('./tipografia');
 const edicion = require('./edicion');
 // Recursos del PC y el optimizador que sugiere (PRD-05, 02-11-2026).
 const recursos = require('./recursos');
+// Lo que cambia entre Windows y macOS (buscar programas, PATH, tubo, huérfanas, barra de la ventana).
+const plataforma = require('./plataforma');
+plataforma.cargarPathDelShell();
+// El plan de Claude de quien usa la app (Pro, Max o API): topes de sesiones, modelo y esfuerzo (plan.js).
+const planes = require('./plan');
 
 // Pruebas al lado de la consola en uso: --datos="<carpeta>" trae otro estado, otros hooks y otro candado de instancia.
 const datosPrueba = process.argv.find((x) => x.startsWith('--datos='));
@@ -49,6 +54,7 @@ function perfil() {
   try { return Object.assign({}, PERFIL_BASE, JSON.parse(fs.readFileSync(ARCHIVO_PERFIL, 'utf8'))); } catch (e) { return Object.assign({}, PERFIL_BASE); }
 }
 const quien = () => perfil().nombre || 'quien usa Chocosys';
+const planActual = () => planes.actual(perfil().plan);
 const carpetaRecetasPropias = () => perfil().carpeta_recetas || path.join(DATOS, 'recetas');
 const carpetaPlantillasPropias = () => perfil().carpeta_plantillas || path.join(DATOS, 'plantillas');
 // Edición propia del instalador (sprint 18): trae una semilla con perfil, recetas y plantillas. Se copia a los datos
@@ -72,7 +78,7 @@ function mcpConectado() {
   } catch (e) { return false; }
 }
 ipcMain.handle('instalacion:revisar', () => {
-  const nodeExe = buscar('node', 'C:\\Program Files\\nodejs\\node.exe');
+  const nodeExe = buscar('node');
   let version = '';
   if (claudeExe) { try { version = execFileSync(claudeExe, ['--version'], { encoding: 'utf8', windowsHide: true, timeout: 8000 }).trim(); } catch (e) { /* sin versión */ } }
   const conCarpeta = espacios.some((e) => e.carpeta && fs.existsSync(e.carpeta));
@@ -87,7 +93,7 @@ ipcMain.handle('instalacion:revisar', () => {
 });
 // Conectar el MCP lo pide la persona con un clic: escribe en su configuración de Claude Code (--scope user).
 ipcMain.handle('instalacion:conectar-mcp', () => {
-  const nodeExe = buscar('node', 'C:\\Program Files\\nodejs\\node.exe');
+  const nodeExe = buscar('node');
   if (!claudeExe || !nodeExe) return { ok: false, motivo: 'Falta Claude Code o Node.js.' };
   try {
     try { execFileSync(claudeExe, ['mcp', 'remove', '--scope', 'user', 'chocosys'], { windowsHide: true, timeout: 20000, stdio: 'ignore' }); } catch (e) { /* no estaba */ }
@@ -106,7 +112,8 @@ function configurarLoPropio() {
   configurarFlujos({
     recetas: carpetaRecetasPropias(),
     variables: { nombre: quien(), salas: carpetaSalas(), skill_sala: path.join(app.getPath('home'), '.claude', 'skills', 'sala-directiva') },
-    acciones: listaAcciones
+    acciones: listaAcciones,
+    topeAgentes: () => planActual().agentes
   });
   require('./crm/crm').configurarPlantillas(carpetaPlantillasPropias());
 }
@@ -131,15 +138,7 @@ function registrar(...partes) {
   } catch (e) { /* sin registro */ }
 }
 
-function buscar(programa, respaldo) {
-  try {
-    const salida = execFileSync('where.exe', [programa], { encoding: 'utf8', windowsHide: true });
-    // Solo .exe: Node 26 no lanza un .cmd sin shell (EINVAL) y con shell un salto de línea en un argumento corta la orden.
-    const primera = salida.split(/\r?\n/).find((l) => l.trim() && /\.exe$/i.test(l.trim()));
-    if (primera) return primera.trim();
-  } catch (e) { /* no está en el PATH */ }
-  return respaldo && fs.existsSync(respaldo) ? respaldo : null;
-}
+const buscar = (programa) => plataforma.buscar(programa);
 
 // Los hooks entran por --settings en cada sesión: la configuración global de Claude no se toca.
 function escribirHooks(nodeExe) {
@@ -603,7 +602,7 @@ function iniciarServidor() {
 
 // ── Terminales: las tiene terminales.js, aparte, para que reiniciar la consola no corte a las sesiones (sprint 12) ──
 // Un tubo por carpeta de datos: la consola de prueba (--datos) tiene su propio dueño de terminales.
-const TUBO = '\\\\.\\pipe\\chocosys-terminales-' + crypto.createHash('sha1').update(DATOS.toLowerCase()).digest('hex').slice(0, 12);
+const TUBO = plataforma.tuboTerminales(DATOS);
 let tubo = null;
 const pendientes = [];
 let vivasAlConectar = [];
@@ -725,7 +724,7 @@ function catalogoMcp(m) {
   let cj = {};
   try { cj = JSON.parse(fs.readFileSync(ARCHIVO_CLAUDE_JSON, 'utf8')); } catch (e) { /* sin ~\.claude.json: solo el catálogo del perfil */ }
   const deProyectos = Object.values(cj.projects || {}).map((p) => (p && p.mcpServers) || {});
-  if (!nodeMcp) nodeMcp = buscar('node', 'C:\\Program Files\\nodejs\\node.exe') || 'node';
+  if (!nodeMcp) nodeMcp = buscar('node') || 'node';
   // chocosys siempre el de este programa: en una copia de prueba, su propio MCP.
   return Object.assign({}, ...deProyectos, cj.mcpServers || {}, m.catalogo || {}, { chocosys: { type: 'stdio', command: nodeMcp, args: [RUTA_MCP()], env: {} } });
 }
@@ -763,7 +762,7 @@ function abrir(id, cols, rows) {
   const s = sesiones.get(id);
   if (!s || procesos.has(id)) return;
   if (!claudeExe) {
-    datosPty(id, '\r\n\x1b[33mNo encontré claude.exe en el PATH.\x1b[0m\r\n');
+    datosPty(id, '\r\n\x1b[33mNo encontré Claude Code (claude) en el PATH.\x1b[0m\r\n');
     return;
   }
   const retomando = !!s.iniciada;
@@ -773,8 +772,11 @@ function abrir(id, cols, rows) {
   // Lite: con el perfil MCP encendido, solo los servidores de su perfil. Va antes del «--»: --mcp-config acepta varios valores.
   args.push(...argsMcp(s));
   // Modelo y esfuerzo de la etapa (skill clasificar-complejidad); una sesión suelta usa los de quien usa la app.
-  if (s.modelo && MODELOS[s.modelo]) args.push('--model', MODELOS[s.modelo]);
-  if (s.esfuerzo && ESFUERZOS.includes(s.esfuerzo)) args.push('--effort', s.esfuerzo);
+  // El plan pone el de una sesión que no pide uno y recorta al máximo que permite (Opus en Pro corre en Sonnet).
+  const me = planes.ajustar(MODELOS[s.modelo] ? s.modelo : '', ESFUERZOS.includes(s.esfuerzo) ? s.esfuerzo : '', planActual());
+  if (me.bajado) registrar('plan: bajado', id, `${s.modelo || '-'}/${s.esfuerzo || '-'} → ${me.modelo || '-'}/${me.esfuerzo || '-'}`);
+  if (MODELOS[me.modelo]) args.push('--model', MODELOS[me.modelo]);
+  if (ESFUERZOS.includes(me.esfuerzo)) args.push('--effort', me.esfuerzo);
   // Solo lectura (auditores): sin editar archivos existentes. Write queda para su propio informe.
   if (s.soloLectura) args.push('--disallowedTools', 'Edit', 'NotebookEdit');
   // Con internet (etapa «web: true», sprint 10): buscar y leer páginas sin quedar esperando un permiso. Solo eso: no envía ni sube nada.
@@ -885,14 +887,13 @@ function crearVentana() {
     width: 1440, height: 900, minWidth: 900, minHeight: 560,
     backgroundColor: '#0b0a09',
     title: 'Chocosys',
-    titleBarStyle: 'hidden',
-    // Transparente: el resplandor del fondo sigue detrás de los botones de la ventana.
-    titleBarOverlay: { color: '#00000000', symbolColor: '#b8ad9f', height: 52 },
+    // Transparente: el resplandor del fondo sigue detrás de los botones de la ventana (en macOS, semáforos a la izquierda).
+    ...plataforma.opcionesVentana(),
     // Desde el código el icono no viene del .exe: se le pasa (build/ no va en el paquete; ahí manda el del instalador).
     ...(app.isPackaged ? {} : { icon: path.join(__dirname, 'build', 'icon.png') }),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
-  ventana.loadFile(path.join(__dirname, 'renderer', 'index.html'), { query: { edicion: edicion.NOMBRE } });
+  ventana.loadFile(path.join(__dirname, 'renderer', 'index.html'), { query: { edicion: edicion.NOMBRE, plataforma: process.platform } });
   // Ninguna página ajena con el API de la app: un enlace de la terminal (OSC 8) abría una ventana con el preload, y soltar
   // un archivo encima navegaba a él. Solo se carga la interfaz propia.
   const propia = require('url').pathToFileURL(path.join(__dirname, 'renderer', 'index.html')).href;
@@ -909,10 +910,12 @@ function crearVentana() {
     if (nivel === 'error' || nivel === 'warning' || nivel === 3 || nivel === 2) registrar('ventana', String(nivel), e.message || '');
   });
   ventana.webContents.on('render-process-gone', (e, d) => registrar('ventana cayó', d.reason));
-  // Sin menú: sus atajos (Ctrl+R recarga, Ctrl+W cierra) le quitarían teclas a Claude Code.
-  ventana.removeMenu();
+  // Sin menú: sus atajos (Ctrl+R recarga, Ctrl+W cierra) le quitarían teclas a Claude Code. En macOS el menú de la app
+  // existe siempre: queda uno mínimo con Edición, sin el cual Cmd+C y Cmd+V no copian ni pegan.
+  if (plataforma.esMac) Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]));
+  else ventana.removeMenu();
   ventana.webContents.on('before-input-event', (e, input) => {
-    if (input.type !== 'keyDown' || !input.control || !input.shift) return;
+    if (input.type !== 'keyDown' || !plataforma.conModificador(input) || !input.shift) return;
     const tecla = input.key.toLowerCase();
     if (tecla === 'i') ventana.webContents.toggleDevTools();
     if (input.key === 'F5') ventana.webContents.reload();
@@ -1011,9 +1014,10 @@ function crmCarpeta(n) {
 }
 function esCarpeta(ruta) { try { return fs.statSync(ruta).isDirectory(); } catch (e) { return false; } }
 // «Abrir» nunca ejecuta: shell.openPath corre un .exe, .bat o acceso directo; esos se muestran en su carpeta.
-const EJECUTABLE = /\.(exe|bat|cmd|com|lnk|url|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|msi|msp|scr|pif|cpl|jar|reg|appref-ms)$/i;
+// En macOS también: scripts, instaladores y los .app, que son carpetas y openPath los lanza.
+const EJECUTABLE = /\.(exe|bat|cmd|com|lnk|url|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|msi|msp|scr|pif|cpl|jar|reg|appref-ms|command|tool|sh|zsh|bash|pkg|mpkg|dmg|workflow|scpt|applescript|terminal)$/i;
 function abrirSinEjecutar(ruta) {
-  if (EJECUTABLE.test(ruta) && !esCarpeta(ruta)) { shell.showItemInFolder(ruta); return Promise.resolve(''); }
+  if (/\.app[\\/]?$/i.test(ruta) || (EJECUTABLE.test(ruta) && !esCarpeta(ruta))) { shell.showItemInFolder(ruta); return Promise.resolve(''); }
   return shell.openPath(ruta);
 }
 
@@ -1196,6 +1200,12 @@ async function atenderMcp(accion, d) {
         if (pide.central) enviar('aviso', `La central llegó a su tope (${n} trabajando a la vez): abre la siguiente cuando termine una. Se cambia en perfil.json, «central.tope».`);
         throw new Error(`Tope de ${n} sesiones trabajando a la vez. Espera a que termine una (Chocosys te avisa) o dale la tarea a una que ya terminó, con sesion_ordenar.`);
       }
+      // El tope del plan vale para todas las que piden por el MCP; solo quien usa la app abre una más, desde la ventana.
+      const tp = topePlan();
+      if (tp) {
+        registrar('plan: tope de sesiones (MCP)', tp.n, tp.tope);
+        throw new Error(`El plan de Claude de quien usa la app (${tp.nombre}) permite ${tp.tope} sesiones trabajando a la vez y hay ${tp.n}. Espera a que termine una o dale la tarea a una que ya terminó, con sesion_ordenar.`);
+      }
       // Con quiénes podrá hablar desde que nace: solo sesiones a cargo de la misma coordinadora.
       const con = [].concat(d.con || []).map(buscarSesion);
       if (con.some((x) => !coord || x.coordinador !== coord.id)) throw new Error('«con» acepta solo sesiones a tu cargo.');
@@ -1310,6 +1320,9 @@ async function atenderMcp(accion, d) {
       if (t.carpeta && !fs.existsSync(t.carpeta)) throw new Error('La carpeta no existe: ' + t.carpeta);
       if (t.sesion) buscarSesion(t.sesion);
       if (t.tipo === 'orden' && !t.sesion && !centralViva() && !(perfil().central || {}).activa) throw new Error('Sin «sesion», la orden va a la central, y no hay una abierta ni activa (perfil.json, «central.activa»).');
+      // Una tarea programada corre sin nadie mirando y gasta del mismo límite: el plan fija cuántas puede haber.
+      const pl = planActual();
+      if (!existe && pl.programadas && lista.length >= pl.programadas) throw new Error(`El plan de quien usa la app (${pl.nombre}) permite ${pl.programadas} tareas programadas y ya hay ${lista.length}. Quita una con programada_quitar o pídele que suba el tope en ☰ › Mi plan.`);
       if (existe) lista[lista.indexOf(existe)] = t; else lista.push(t);
       prog.guardar(lista);
       registrar('programada guardada', t.id, t.cuando || t.en);
@@ -1426,6 +1439,9 @@ async function atenderMcp(accion, d) {
       const carpeta = String(d.carpeta || receta.carpeta || '').trim();
       if (!carpeta || !fs.existsSync(carpeta)) throw new Error('Falta la carpeta del trabajo o no existe: ' + carpeta);
       const simulacro = d.simulacro !== false;
+      // El tope del plan también para un flujo pedido por el MCP: abre sesiones por su cuenta (desde la ventana decide quien la usa).
+      const tp = topePlan();
+      if (tp) throw new Error(`El plan de Claude de quien usa la app (${tp.nombre}) permite ${tp.tope} sesiones trabajando a la vez y hay ${tp.n}. Lanza el flujo cuando termine alguna.`);
       // Por el MCP, el flujo cae en su espacio sin cambiar lo que quien usa la app está mirando.
       // modelos: { índice de etapa: 'haiku' | 'opus' } (para probar barato); las demás, como dice la receta.
       // parametros (sprint 23): { índice de etapa con acción: { parámetro: valor } }, pisan los de la receta en esta corrida.
@@ -1595,7 +1611,7 @@ function leerEntornos() {
 // log.md. Sin obsidian.json las bóvedas vienen vacías y solo se ve lo de antes. Una Chocosys de prueba lee primero el
 // obsidian.json de sus datos, para probar sin depender de la Obsidian del computador.
 const obsidian = require('./obsidian');
-const bovedasObsidian = () => obsidian.leerBovedas([datosPrueba ? path.join(DATOS, 'obsidian.json') : '', process.env.APPDATA ? path.join(process.env.APPDATA, 'obsidian', 'obsidian.json') : '']);
+const bovedasObsidian = () => obsidian.leerBovedas([datosPrueba ? path.join(DATOS, 'obsidian.json') : '', path.join(plataforma.datosDeApps(), 'obsidian', 'obsidian.json')]);
 const entornosConGuia = () => obsidian.completarEntornos(leerEntornos(), bovedasObsidian());
 ipcMain.handle('entornos:lista', () => entornosConGuia());
 // Abre un archivo (o la guía del entorno con ese nombre) en Obsidian, solo si está dentro de una bóveda (D3). En una
@@ -2018,6 +2034,9 @@ function contextoSala(n, archivos, c) {
 async function llevarASala(d, autor, irAlEspacio) {
   const decision = String(d.decision || '').trim();
   if (!decision) throw new Error('Falta la decisión: qué hay que decidir.');
+  // La sala abre varias sesiones a la vez (una por asesor): el plan decide si se puede.
+  const pl = planActual();
+  if (!pl.sala) throw new Error(`La «Segunda opinión» está apagada en tu plan (${pl.nombre}): abre una sesión por asesor y gasta mucho del límite de uso. Se enciende en ☰ › Mi plan.`);
   cargarConfigSala();
   // La profundidad manda; «version» queda para quien la pida directo (prueba, rápida o completa). Sin ninguna, la por defecto.
   const prof = PROFUNDIDAD_SALA[d.profundidad] ? d.profundidad : (RECETA_SALA[d.version] ? null : PROFUNDIDAD_POR_DEFECTO);
@@ -2311,7 +2330,17 @@ ipcMain.handle('flujo:quitar', (e, fid) => {
   difundir();
 });
 // Una sesión que nace de la barra de comando se llama como su orden, no como su carpeta.
-ipcMain.handle('sesion:nueva', (e, carpeta, instruccion, opciones) => {
+ipcMain.handle('sesion:nueva', async (e, carpeta, instruccion, opciones) => {
+  // Sobre el tope del plan se pregunta: abrir una más es decisión de quien usa la app, a conciencia.
+  const t = topePlan();
+  if (t) {
+    const o = { type: 'question', title: 'Chocosys', noLink: true, defaultId: 0, cancelId: 0, buttons: ['Cancelar', 'Abrir una más'],
+      message: `Hay ${t.n} sesiones trabajando y tu plan (${t.nombre}) está puesto en ${t.tope} a la vez.`,
+      detail: 'Todas gastan del mismo límite de uso de Claude: con una más se acaba antes. El tope se cambia en ☰ › Mi plan.' };
+    const r = await (ventana ? dialog.showMessageBox(ventana, o) : dialog.showMessageBox(o));
+    registrar('plan: tope de sesiones', t.n, t.tope, r.response === 1 ? 'abrió una más' : 'canceló');
+    if (r.response !== 1) return null;
+  }
   const extra = instruccion ? { nombre: recortar(instruccion, 34) } : {};
   // Modelo y esfuerzo elegidos en la barra de comando (sprint 15, L1).
   const o = opciones || {};
@@ -2442,6 +2471,13 @@ const aCargoDe = (id) => [...sesiones.values()].filter((x) => x.coordinador === 
 const NUEVA_SIN_TURNO_MS = 30 * 1000;
 const ocupaCupo = (x) => x.estado === 'trabajando' || x.estado === 'necesita' ||
   (x.estado === 'pausa' && !x.turnos && !x.inicioTurno && Date.now() - (x.creada || 0) < NUEVA_SIN_TURNO_MS);
+// Tope del plan (15-11-2026): cuenta todas las que ocupan cupo, también la central y las de flujos, porque todas gastan del
+// mismo límite de uso. Devuelve null si hay espacio o el plan no tiene tope.
+function topePlan() {
+  const p = planActual();
+  const n = [...sesiones.values()].filter(ocupaCupo).length;
+  return p.sesiones && n >= p.sesiones ? { n, tope: p.sesiones, nombre: p.nombre } : null;
+}
 function instruccionCoordinadora(objetivo, asignadas, informe) {
   const yo = quien();
   return [
@@ -2500,7 +2536,13 @@ function avisarSesion(c, linea, motivo) {
 // navegador abierto la cuarta ya lleva la RAM al umbral de 85 %; además cada una gasta el mismo plan en paralelo.
 const TOPE_CENTRAL = 3;
 const nombreDe = (id) => (sesiones.get(id) || {}).nombre || id;
-const topeCentral = () => { const n = Number((perfil().central || {}).tope); return Number.isInteger(n) && n >= 1 && n <= 12 ? n : TOPE_CENTRAL; };
+// Sin «central.tope», el del plan menos la propia central (en Pro, 2 a la vez = la central y una más).
+const topeCentral = () => {
+  const n = Number((perfil().central || {}).tope);
+  if (Number.isInteger(n) && n >= 1 && n <= 12) return n;
+  const p = planActual().sesiones;
+  return p ? Math.max(1, p - 1) : TOPE_CENTRAL;
+};
 const topeDe = (c) => (c && c.central ? topeCentral() : TOPE_ORQUESTA);
 // Una sesión a cargo de una coordinadora habla solo con ella y con sus enlaces. Las sueltas y la ventana, con todas.
 function puedeHablar(yo, s, que) {
@@ -2873,9 +2915,25 @@ function fraseSobreMi() {
   const l = [s.nombre && `Se llama (o le dicen) ${s.nombre}.`, s.dedica && `Se dedica a: ${s.dedica}.`, s.quiere && `Quiere usar Chocosys para: ${s.quiere}.`].filter(Boolean);
   return l.length ? 'Sobre quien usa Chocosys (lo escribió en la app y lo puede cambiar o borrar): ' + l.join(' ') : '';
 }
+// ☰ › Mi plan: los planes de fábrica, el vigente y si quien usa la app ya eligió uno.
+ipcMain.handle('plan:leer', () => ({ planes: planes.PLANES, actual: planActual(), elegido: !!perfil().plan }));
+// Se guarda en perfil.json, «plan», solo lo que difiere de la fábrica. Un perfil.json ilegible no se pisa (se perdería el resto).
+ipcMain.handle('plan:guardar', (e, d) => {
+  let p = {};
+  if (fs.existsSync(ARCHIVO_PERFIL)) {
+    try { p = JSON.parse(fs.readFileSync(ARCHIVO_PERFIL, 'utf8')); } catch (err) { return { ok: false, motivo: 'perfil.json tiene un error y no lo quise pisar: ' + err.message }; }
+  }
+  p.plan = planes.paraGuardar(d || {});
+  try {
+    fs.writeFileSync(ARCHIVO_PERFIL + '.tmp', JSON.stringify(p, null, 2), 'utf8');
+    fs.renameSync(ARCHIVO_PERFIL + '.tmp', ARCHIVO_PERFIL);
+  } catch (err) { return { ok: false, motivo: err.message }; }
+  registrar('plan guardado', JSON.stringify(p.plan));
+  return { ok: true, actual: planActual() };
+});
 ipcMain.handle('bienvenida:marcas', () => leerJson(ARCHIVO_MARCAS, {}));
 ipcMain.handle('bienvenida:marcar', (e, clave) => {
-  if (!['creditos_vistos', 'sobre_mi_preguntado'].includes(clave)) return false;
+  if (!['creditos_vistos', 'sobre_mi_preguntado', 'plan_elegido'].includes(clave)) return false;
   const m = leerJson(ARCHIVO_MARCAS, {});
   m[clave] = new Date().toISOString().slice(0, 10);
   guardarJson(ARCHIVO_MARCAS, m);
@@ -2960,7 +3018,7 @@ ipcMain.handle('sesion:transcripciones', (e, ids) => (Array.isArray(ids) ? ids :
 }).filter(Boolean));
 
 app.setName('Chocosys');
-app.setAppUserModelId('cl.camilomerino.chocosys');
+if (plataforma.esWin) app.setAppUserModelId('cl.camilomerino.chocosys');
 
 // Una sola consola a la vez: la segunda trae la primera al frente y termina ahí mismo. Antes solo llamaba
 // a app.quit(), que no corta el arranque: la segunda podía alcanzar a cerrar los claude.exe vivos de la
@@ -2974,14 +3032,7 @@ app.on('second-instance', mostrarVentana);
 // Se espera a que termine antes de abrir sesiones nuevas, para no cerrar ninguna de las nuevas.
 // Las del dueño de terminales (su pid) no son huérfanas: siguen vivas a propósito.
 function cerrarHuerfanas(dueno) {
-  const orden = `Get-CimInstance Win32_Process -Filter "Name='claude.exe'" | Where-Object { $_.CommandLine -like '*${ARCHIVO_HOOKS.replace(/'/g, "''")}*' -and $_.ParentProcessId -ne ${Number(dueno) || 0} } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }`;
-  return new Promise((resolver) => {
-    require('child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', orden], { windowsHide: true, timeout: 15000 }, (err, salida) => {
-      const ids = String(salida || '').trim();
-      if (ids) registrar('huérfanas cerradas', ids.replace(/\s+/g, ','));
-      resolver();
-    });
-  });
+  return plataforma.cerrarHuerfanas(ARCHIVO_HOOKS, dueno).then((ids) => { if (ids.length) registrar('huérfanas cerradas', ids.join(',')); });
 }
 
 // ── Recursos del PC (PRD-05) ──
@@ -3037,8 +3088,8 @@ app.whenReady().then(async () => {
   if (!esLaPrimera) return;
   fs.mkdirSync(DATOS, { recursive: true });
   await cerrarHuerfanas(await conectarTerminales());
-  claudeExe = buscar('claude', path.join(app.getPath('home'), '.local', 'bin', 'claude.exe'));
-  const nodeExe = buscar('node', 'C:\\Program Files\\nodejs\\node.exe');
+  claudeExe = buscar('claude');
+  const nodeExe = buscar('node');
   if (nodeExe) escribirHooks(nodeExe);
   puerto = await iniciarServidor();
   // El MCP lee de acá dónde y con qué token hablarle a esta consola (cambia en cada apertura).
@@ -3074,7 +3125,7 @@ app.whenReady().then(async () => {
     });
   }
   if (!nodeExe) {
-    dialog.showErrorBox('Falta Node.js', 'Los estados de las sesiones necesitan node.exe en el PATH. Las terminales funcionan igual.');
+    dialog.showErrorBox('Falta Node.js', 'Los estados de las sesiones necesitan Node.js (node) en el PATH. Las terminales funcionan igual.');
   }
 });
 

@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('consola', {
     guardarSobreMi: (d) => ipcRenderer.invoke('sobremi:guardar', d),
     borrarSobreMi: () => ipcRenderer.invoke('sobremi:borrar')
   },
+  plan: {
+    leer: () => ipcRenderer.invoke('plan:leer'),
+    guardar: (d) => ipcRenderer.invoke('plan:guardar', d)
+  },
   reporte: {
     capturar: () => ipcRenderer.invoke('reporte:capturar'),
     previa: (d) => ipcRenderer.invoke('reporte:previa', d),

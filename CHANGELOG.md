@@ -5,6 +5,19 @@
 Las fechas van en formato DD-MM-AAAA. Este repositorio parte con un solo commit (13-11-2026); lo anterior viene del
 historial de desarrollo y de las fichas de actualización, contado sin datos de nadie.
 
+## Sin publicar (rama `mac-y-planes`, 15-11-2026)
+
+- **Mi plan:** al primer inicio (y en ☰ › Mi plan) se elige la suscripción de Claude Code: Pro, Max 5x, Max 20x, API o
+  sin límites. Cada plan fija cuántas sesiones trabajan a la vez, el modelo y esfuerzo de una sesión nueva, el modelo y
+  esfuerzo máximos (en Pro, una etapa que pide Opus corre en Sonnet), los agentes por etapa de un flujo, las tareas
+  programadas y si se puede usar la Segunda opinión. Todo se puede subir a conciencia; el diálogo dice qué quedó sobre lo
+  de fábrica. Sobre el tope, abrir una sesión desde la ventana pregunta; el MCP no puede pasarlo. Sin plan elegido, la
+  app sigue como antes. Se guarda en `perfil.json`, «plan». Prueba: `scripts/probar-plan.js`.
+- **macOS (sin probar en un Mac):** capa de plataforma (`plataforma.js`) para buscar programas, el PATH del shell de
+  login, el tubo de terminales como socket Unix, la barra con los semáforos y los atajos con Cmd; lector de procesos con
+  `ps` e `ioreg` (`procesos-unix.js`, mismas órdenes que el PowerShell); `.dmg` con `npm run instalador -- --mac` en un
+  Mac o con `.github/workflows/mac.yml`. Windows queda igual. Prueba: `scripts/probar-unix.js`.
+
 ## 0.22.0 · 15-11-2026
 
 - **Fuentes propias:** `%APPDATA%\consola-agentes\fuentes\fuentes.json` elige la fuente de los títulos, de la interfaz

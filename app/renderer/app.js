@@ -9,6 +9,9 @@ const api = window.consola;
 // Edición (lite/terminales, lite/flujos o la completa): main.js la pasa en la dirección; styles.css esconde lo que no va.
 const EDICION = new URLSearchParams(location.search).get('edicion') || 'completa';
 document.documentElement.dataset.edicion = EDICION;
+// macOS (15-11-2026): los atajos de la app van con Cmd en vez de Ctrl; Ctrl sigue siendo de Claude Code.
+const MAC = new URLSearchParams(location.search).get('plataforma') === 'darwin';
+document.documentElement.dataset.plataforma = MAC ? 'mac' : 'win';
 const VISTAS_EDICION = { terminales: ['lienzo', 'bandeja'], flujos: ['lienzo', 'bandeja', 'flujo'] }[EDICION];
 const ORDEN = ['necesita', 'termino', 'trabajando', 'pausa'];
 const ETIQUETA = { necesita: 'TE NECESITA', termino: 'TERMINÓ', trabajando: 'TRABAJANDO', pausa: 'EN PAUSA', espera: 'EN ESPERA', listo: 'TERMINÓ' };
@@ -2961,6 +2964,8 @@ async function lanzarFlujo() {
 
 document.addEventListener('keydown', (e) => {
   const tecla = e.key.toLowerCase();
+  // Ctrl en Windows, Cmd en macOS. Ctrl+Tab queda igual en los dos: Cmd+Tab es del sistema.
+  const mod = MAC ? e.metaKey : e.ctrlKey;
   const enOrden = document.activeElement === $('#orden');
   const activo = document.activeElement;
   const enCampo = !!activo && (activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA') && !activo.classList.contains('xterm-helper-textarea');
@@ -2975,21 +2980,21 @@ document.addEventListener('keydown', (e) => {
   else if (e.ctrlKey && e.key === 'Tab') { siguiente(); hecho = true; }
   // Alt+1 a Alt+9: directo a esa pestaña.
   else if (e.altKey && !e.ctrlKey && !e.shiftKey && /^Digit[1-9]$/.test(e.code)) { pasarAPestana((espacios[Number(e.code.slice(5)) - 1] || {}).id); hecho = true; }
-  else if (e.ctrlKey && e.shiftKey && tecla === 'n') { menuCrear('sesion'); hecho = true; }
-  else if (e.ctrlKey && e.shiftKey && tecla === 'l') { abrirLanzador(); hecho = true; }
+  else if (mod && e.shiftKey && tecla === 'n') { menuCrear('sesion'); hecho = true; }
+  else if (mod && e.shiftKey && tecla === 'l') { abrirLanzador(); hecho = true; }
   // Con Shift, como los demás: Ctrl+K sin Shift borra hasta el final de la línea en Claude Code.
-  else if (e.ctrlKey && e.shiftKey && tecla === 'k') { $('#orden').focus(); hecho = true; }
+  else if (mod && e.shiftKey && tecla === 'k') { $('#orden').focus(); hecho = true; }
   // Ctrl+Shift+0: el Inicio.
-  else if (e.ctrlKey && e.shiftKey && e.code === 'Digit0') { cambiarModo('inicio'); hecho = true; }
+  else if (mod && e.shiftKey && e.code === 'Digit0') { cambiarModo('inicio'); hecho = true; }
   // Vistas: Ctrl+Shift+1 lienzo, 2 bandeja, 3 flujo, 4 CRM (por la tecla física: con Shift, «1» llega como «!»).
-  else if (e.ctrlKey && e.shiftKey && ['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(e.code)) {
+  else if (mod && e.shiftKey && ['Digit1', 'Digit2', 'Digit3', 'Digit4'].includes(e.code)) {
     cambiarModo(MODOS[Number(e.code.slice(-1)) - 1]);
     hecho = true;
   }
   // Ctrl+Shift+← y →: la pestaña anterior o la siguiente.
-  else if (e.ctrlKey && e.shiftKey && (tecla === 'arrowleft' || tecla === 'arrowright')) { pasarEspacio(tecla === 'arrowleft' ? -1 : 1); hecho = true; }
+  else if (mod && e.shiftKey && (tecla === 'arrowleft' || tecla === 'arrowright')) { pasarEspacio(tecla === 'arrowleft' ? -1 : 1); hecho = true; }
   // Ctrl+Shift+M: maximiza o achica la ventana elegida.
-  else if (e.ctrlKey && e.shiftKey && tecla === 'm' && sel && !esPuerta(sel) && sesion(sel)) { alternarMax(sel); hecho = true; }
+  else if (mod && e.shiftKey && tecla === 'm' && sel && !esPuerta(sel) && sesion(sel)) { alternarMax(sel); hecho = true; }
   // Esc cierra la tarjeta de la puerta (sin aprobar nada), salvo que estés escribiendo los cambios.
   else if (e.key === 'Escape' && !$('#puerta').hidden && !pidiendoCambios) { restaurarAprobar(); sel = null; pintar(); hecho = true; }
   // En la puerta de elegir: H, D o N decide la fila activa; las flechas se mueven. No con el foco en un campo
@@ -2999,7 +3004,7 @@ document.addEventListener('keydown', (e) => {
     else decidir({ h: 'hoy', d: 'despues', n: 'no' }[tecla]);
     hecho = true;
   }
-  else if (e.ctrlKey && e.key === 'Enter' && !$('#puerta').hidden && !pidiendoCambios) {
+  else if (mod && e.key === 'Enter' && !$('#puerta').hidden && !pidiendoCambios) {
     const f = flujo(sel.slice(2));
     const puerta = f && f.items[f.actual];
     if (f && puerta && !puerta.critica) { aprobar(f.id, 'teclado'); hecho = true; }
@@ -3008,7 +3013,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     e.stopPropagation();
     // Qué usas: los atajos cuentan aparte de los clics (Esc no, que cierra cualquier cosa).
-    if (e.key !== 'Escape') api.uso('atajo:' + [e.ctrlKey && 'Ctrl', e.shiftKey && 'Shift', e.code.replace(/^(Key|Digit)/, '')].filter(Boolean).join('+'));
+    if (e.key !== 'Escape') api.uso('atajo:' + [e.ctrlKey && 'Ctrl', e.metaKey && 'Cmd', e.shiftKey && 'Shift', e.code.replace(/^(Key|Digit)/, '')].filter(Boolean).join('+'));
   }
 }, true);
 

@@ -10,7 +10,7 @@
     "start": "electron .",
     "instalador": "node scripts/instalador.js",
     "instalador:mio": "node scripts/instalador.js --mio",
-    "probar": "node scripts/probar-reporte.js && node scripts/probar-fuentes.js"
+    "probar": "node scripts/probar-reporte.js && node scripts/probar-fuentes.js && node scripts/probar-unix.js && node scripts/probar-plan.js"
   },
   "dependencies": {
     "@fontsource-variable/cascadia-code": "5.3.0",
@@ -63,6 +63,24 @@
       "shortcutName": "Chocosys",
       "uninstallDisplayName": "Chocosys",
       "artifactName": "Chocosys-instalador-${version}.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "artifactName": "Chocosys-${version}-${arch}.dmg"
     }
   }
 }

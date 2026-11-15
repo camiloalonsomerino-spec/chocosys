@@ -18,7 +18,10 @@ let carpetaPropias = CARPETA_EJEMPLOS;
 let variables = { nombre: 'quien usa Chocosys' };
 // Sprint 23 (H2): las acciones estándar (las del programa y las de los datos). main.js dice cómo leerlas.
 let listaAcciones = () => [];
+// Agentes en paralelo por etapa que permite el plan (plan.js): la receta puede pedir más y se recorta al lanzar.
+let topeAgentes = () => MAX_AGENTES;
 function configurar(o) {
+  if (typeof o.topeAgentes === 'function') topeAgentes = o.topeAgentes;
   if (o.recetas) carpetaPropias = o.recetas;
   if (o.variables) variables = Object.assign({}, variables, o.variables);
   if (typeof o.acciones === 'function') listaAcciones = o.acciones;
@@ -31,7 +34,7 @@ const ESFUERZOS = ['low', 'medium', 'high', 'xhigh', 'max'];
 const ESFUERZO_POR_DEFECTO = { haiku: 'medium', opus: 'xhigh' };
 const MODELOS_RECETA = ['auto', 'haiku', 'opus'];
 const MAX_AGENTES = 6;
-const entreAgentes = (n) => Math.max(1, Math.min(MAX_AGENTES, Number(n) || 1));
+const entreAgentes = (n) => Math.max(1, Math.min(MAX_AGENTES, topeAgentes(), Number(n) || 1));
 
 // Cómo nació una receta (sprint 21, base del 24): a mano, desde una sesión («Hacer flujo») o por entrevista.
 const ORIGENES = ['mano', 'sesion', 'entrevista'];

@@ -134,6 +134,8 @@ kbd { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; b
 /* ── Barra superior ─────────────────────────────────── */
 .barra-sup { position: relative; z-index: 20; height: var(--alto-barra); flex: none; display: flex; align-items: center; gap: 8px; padding: 0 calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, calc(100vw - 160px)) + 8px) 0 18px; }
 /* Los botones de la ventana (titleBarOverlay) miden lo que diga env(titlebar-area-*); 160px es el respaldo. A ancho reducido, lo de la derecha cede para que las pestañas no desaparezcan ni pasen bajo ellos. */
+/* macOS: los semáforos están a la izquierda (trafficLightPosition x 18, unos 70 px de ancho) y a la derecha no hay botones. */
+[data-plataforma="mac"] .barra-sup { padding: 0 18px 0 92px; }
 #recursos, #plan, #necesitan, #trabajando { flex: 0 0.05 auto; min-width: 0; overflow: hidden; }
 @media (max-width: 1250px) { .marca-texto, #plan { display: none; } }
 @media (max-width: 1000px) { .barra-sup { gap: 6px; } #vivas-txt, #trabajando .sep { display: none; } }
@@ -1165,3 +1167,11 @@ div.pop-fila:hover { border-color: var(--linea); }
 .reporte-zona { display: flex; flex-direction: column; gap: 6px; }
 .dialogo-simple .boton:disabled { opacity: 0.45; cursor: default; }
 .dialogo-simple .modal-pie { flex-wrap: wrap; }
+/* Mi plan (15-11-2026): dos grupos; los ajustes en dos columnas cuando caben, uno bajo otro en ventanas angostas. */
+.plan-grupo { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.plan-grupo legend { padding: 0; margin-bottom: 8px; }
+.plan-ajustes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 16px; }
+.plan-ajustes legend, .plan-ajustes .casilla-simple { grid-column: 1 / -1; }
+.plan-opcion { padding: 6px 0; }
+/* El aviso en el color del texto principal y en negrita: el acento a 12,5 px puede no llegar a 4,5:1 en los temas claros. */
+.plan-aviso { color: var(--tinta); font-weight: 600; }

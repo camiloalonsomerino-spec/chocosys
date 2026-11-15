@@ -1,12 +1,16 @@
 // Chocosys · proyecto sin fines comerciales, solo recreativo · repositorio sin fines de lucro · licencia PolyForm Noncommercial 1.0.0 (ver AVISO.md)
 'use strict';
 
-// Arma el instalador de Chocosys para Windows (sprint 18; foto y comparación desde T-A93, 22-10-2026).
+// Arma el instalador de Chocosys para Windows (sprint 18; foto y comparación desde T-A93, 22-10-2026) o para macOS.
 //   node scripts/instalador.js         edición pública: antes de armar, revisa que nada del paquete nombre a nadie ni
 //                                      lleve rutas de un computador, y se detiene si encuentra algo.
 //   node scripts/instalador.js --mio   edición propia: lleva además una semilla con el perfil, las recetas y las
 //                                      plantillas de quien la arma, que se copia a sus datos la primera vez que abre.
 //   --salida <carpeta>                 deja el instalador ahí en vez de consola-agentes\dist\ (para probar sin pisarlo).
+//   --mac [--arm64] [--x64] [--adhoc]  arma el .dmg de macOS. Solo en un Mac (o en GitHub Actions, .github/workflows/mac.yml):
+//                                      node-pty necesita su binario de macOS y el .dmg sale de hdiutil. --adhoc firma sin cuenta
+//                                      de desarrollador de Apple; con CSC_LINK firma de verdad y con APPLE_ID, APPLE_TEAM_ID y
+//                                      APPLE_APP_SPECIFIC_PASSWORD además notariza.
 //   node scripts/instalador.js --revisar  solo revisa (sin armar) lo que miraría la edición pública.
 //   node scripts/instalador.js --verificar <app.asar> [<carpeta>]
 //                                      solo compara un app.asar armado con una carpeta (por defecto, app\).
@@ -22,11 +26,14 @@ const { execSync } = require('child_process');
 
 const APP = path.join(__dirname, '..');
 const MIO = process.argv.includes('--mio');
+const MAC = process.argv.includes('--mac');
+// Dónde guarda Chocosys los datos de quien arma (perfil.json): %APPDATA% en Windows, Application Support en macOS.
+const carpetaDatos = () => path.join(process.env.APPDATA || (process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Application Support') : path.join(os.homedir(), 'AppData', 'Roaming')), 'consola-agentes');
 // Como build.files: scripts, build y dist solo en la raíz; node_modules y _archivo a cualquier profundidad.
 const FUERA = /^(scripts|build|dist)([\\/]|$)|(^|[\\/])(node_modules|_archivo)([\\/]|$)/;
 // Lo que no puede viajar en la edición pública: rutas de una carpeta de usuario y correos, más los nombres que quien
 // arma anota en su perfil.json («revision_publica»: ["Nombre", "Cliente"…]). Así la lista de nombres no viaja en el programa.
-const DATOS_PROPIOS = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'consola-agentes');
+const DATOS_PROPIOS = carpetaDatos();
 function nombresPropios() {
   const archivo = path.join(DATOS_PROPIOS, 'perfil.json');
   if (!fs.existsSync(archivo)) return [];
@@ -196,6 +203,10 @@ if (process.argv.includes('--revisar')) {
   process.exit(h.length ? 1 : 0);
 }
 
+if (MAC && process.platform !== 'darwin') {
+  console.error('La edición de macOS se arma en un Mac o en GitHub Actions (.github/workflows/mac.yml): desde Windows faltan el binario de node-pty para macOS, hdiutil para el .dmg y codesign para firmar.');
+  process.exit(2);
+}
 const SALIDA = path.resolve(argumento('--salida') || path.join(APP, '..', 'dist'));
 const FOTO = sacarFoto();
 
@@ -212,7 +223,7 @@ const base = JSON.parse(fs.readFileSync(path.join(FOTO, 'package.json'), 'utf8')
 const config = Object.assign({}, base, { directories: Object.assign({}, base.directories, { output: SALIDA }) });
 if (MIO) {
   // La semilla: el perfil sin las rutas de este computador, y las recetas y plantillas propias.
-  const datos = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'consola-agentes');
+  const datos = carpetaDatos();
   const perfil = JSON.parse(fs.readFileSync(path.join(datos, 'perfil.json'), 'utf8'));
   // Fuera del proyecto, para que nunca termine por error dentro de la edición pública.
   const semilla = path.join(os.tmpdir(), 'chocosys-datos-semilla');
@@ -227,11 +238,16 @@ if (MIO) {
   fs.writeFileSync(path.join(semilla, 'perfil.json'), JSON.stringify(perfil, null, 2), 'utf8');
   config.extraResources = [{ from: semilla, to: 'datos-semilla' }];
   config.nsis = Object.assign({}, base.nsis, { artifactName: 'Chocosys-instalador-propio-${version}.exe' });
+  config.dmg = Object.assign({}, base.dmg, { artifactName: 'Chocosys-propio-${version}-${arch}.dmg' });
 }
+// Firma ad-hoc: sin ella macOS da por dañada una app arm64 cuya firma de Electron quedó rota al armarla.
+if (MAC && process.argv.includes('--adhoc')) config.mac = Object.assign({}, base.mac, { identity: '-' });
 // Por la línea de comandos no toma la configuración entera: va en un archivo aparte.
 const archivoConfig = path.join(os.tmpdir(), MIO ? 'chocosys-config-propia.json' : 'chocosys-config-publica.json');
 fs.writeFileSync(archivoConfig, JSON.stringify(config, null, 2), 'utf8');
-const args = ['electron-builder', '--win', 'nsis', '--config', archivoConfig];
+const args = MAC
+  ? ['electron-builder', '--mac', 'dmg', ...['--arm64', '--x64'].filter((a) => process.argv.includes(a)), '--publish', 'never', '--config', archivoConfig]
+  : ['electron-builder', '--win', 'nsis', '--config', archivoConfig];
 try {
   execSync('npx ' + args.map((a) => (/[\s"{}[\]]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)).join(' '), { cwd: FOTO, stdio: 'inherit' });
 } catch {
@@ -240,11 +256,15 @@ try {
   process.exit(1);
 }
 
-const armado = path.join(SALIDA, 'win-unpacked', 'resources', 'app.asar');
-if (!fs.existsSync(armado)) { console.error(`No apareció ${armado}: el armado no terminó bien. ${dejarFoto(FOTO)}`); process.exit(1); }
-if (!informarVerificacion(armado, FOTO)) {
-  console.error(`No uses este instalador. ${dejarFoto(FOTO)}`);
-  process.exit(1);
+const armados = MAC
+  ? ['mac-arm64', 'mac'].map((d) => path.join(SALIDA, d, 'Chocosys.app', 'Contents', 'Resources', 'app.asar')).filter((a) => fs.existsSync(a))
+  : [path.join(SALIDA, 'win-unpacked', 'resources', 'app.asar')].filter((a) => fs.existsSync(a));
+if (!armados.length) { console.error(`No apareció el app.asar en ${SALIDA}: el armado no terminó bien. ${dejarFoto(FOTO)}`); process.exit(1); }
+for (const armado of armados) {
+  if (!informarVerificacion(armado, FOTO)) {
+    console.error(`No uses este instalador. ${dejarFoto(FOTO)}`);
+    process.exit(1);
+  }
 }
 borrarFoto(FOTO);
 console.log(`Listo: el instalador quedó en ${SALIDA}.`);

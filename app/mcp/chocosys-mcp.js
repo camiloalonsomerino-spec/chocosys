@@ -16,7 +16,8 @@ const os = require('os');
 const edicion = require('../edicion');
 
 // CHOCOSYS_DATOS apunta a una consola de prueba abierta con --datos (la carpeta que contiene consola-agentes).
-const DATOS = path.join(process.env.CHOCOSYS_DATOS || process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'consola-agentes');
+// En macOS la app guarda sus datos en ~/Library/Application Support (app.getPath('appData')), y ahí no hay %APPDATA%.
+const DATOS = path.join(process.env.CHOCOSYS_DATOS || process.env.APPDATA || (process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Application Support') : path.join(os.homedir(), 'AppData', 'Roaming')), 'consola-agentes');
 const VERSION = '0.1.0';
 // Quién usa esta Chocosys (sprint 18): su nombre sale de perfil.json, en sus datos, no del programa.
 const NOMBRE = (() => { try { return JSON.parse(fs.readFileSync(path.join(DATOS, 'perfil.json'), 'utf8')).nombre || ''; } catch (e) { return ''; } })() || 'quien usa Chocosys';
