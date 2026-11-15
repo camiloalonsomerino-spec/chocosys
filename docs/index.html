@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-CL">
+<html lang="es-CL" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,19 +8,32 @@
 <meta property="og:title" content="Chocosys">
 <meta property="og:description" content="Varias sesiones de Claude Code en terminales reales, en una sola ventana de Windows.">
 <meta property="og:image" content="https://camiloalonsomerino-spec.github.io/chocosys/sitio/img/inicio.webp">
-<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0a09">
 <link rel="icon" href="sitio/logo.svg" type="image/svg+xml">
+<link rel="preload" href="sitio/fuentes/instrument-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="sitio/fuentes/caveat-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+// El tema se fija antes de pintar: lo elegido en esta página, si no, el del sistema.
+(function () {
+  var t = null;
+  try { t = localStorage.getItem('chocosys-tema'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  document.documentElement.classList.add('js');
+})();
+</script>
 <style>
 /* Las fuentes de la app, servidas desde el repositorio: la página no pide nada a terceros. */
 @font-face { font-family: "Instrument Sans"; src: url("sitio/fuentes/instrument-sans-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 @font-face { font-family: "Caveat"; src: url("sitio/fuentes/caveat-latin-wght-normal.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
 
-/* Tema Brasa de la app (oscuro) y su variante clara, según el sistema de quien visita. */
+/* Tema Brasa de la app. El de la lava son los colores del fluido de la portada. */
 :root {
   --fondo: #0b0a09;
-  --ventana: #14110f;
-  --hundido: #0e0c0a;
+  --ventana: #15110e;
+  --hundido: #0f0c0a;
   --linea: rgba(255, 236, 220, 0.10);
+  --linea-fuerte: rgba(255, 236, 220, 0.18);
   --tinta: #f1e9df;
   --tinta-2: #b8ab9d;
   --brasa: #f2662e;
@@ -29,26 +42,33 @@
   --acento: #ffb08a;
   --hecho: #93d3a0;
   --brasa-suave: rgba(242, 102, 46, 0.14);
+  --sombra: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --lava-nucleo: #c4480f;
+  --lava-borde: #4d1605;
+  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --fondo: #f7f5f2;
-    --ventana: #ffffff;
-    --hundido: #efece8;
-    --linea: rgba(33, 29, 26, 0.12);
-    --tinta: #211d1a;
-    --tinta-2: #5a5148;
-    --brasa: #b8460f;
-    --brasa-tinta: #ffffff;
-    --brasa-hover: #a03c0c;
-    --acento: #a63f0d;
-    --hecho: #2a6f3f;
-    --brasa-suave: rgba(184, 70, 15, 0.10);
-  }
+:root[data-theme="light"] {
+  --fondo: #f7f5f2;
+  --ventana: #ffffff;
+  --hundido: #efece8;
+  --linea: rgba(33, 29, 26, 0.12);
+  --linea-fuerte: rgba(33, 29, 26, 0.22);
+  --tinta: #211d1a;
+  --tinta-2: #5a5148;
+  --brasa: #b8460f;
+  --brasa-tinta: #ffffff;
+  --brasa-hover: #a03c0c;
+  --acento: #a63f0d;
+  --hecho: #2a6f3f;
+  --brasa-suave: rgba(184, 70, 15, 0.10);
+  --sombra: 0 24px 60px rgba(60, 30, 10, 0.16);
+  --lava-nucleo: #f59a66;
+  --lava-borde: #f9d2b8;
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { margin: 0; background: var(--fondo); color: var(--tinta); font: 400 17px/1.6 "Instrument Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 img { max-width: 100%; height: auto; display: block; }
@@ -57,156 +77,335 @@ a:hover { color: var(--brasa-hover); }
 :focus-visible { outline: 2px solid var(--brasa); outline-offset: 3px; border-radius: 4px; }
 code, kbd, pre { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; font-size: 0.88em; }
 kbd { padding: 1px 6px; border: 1px solid var(--linea); border-radius: 6px; background: var(--hundido); white-space: nowrap; }
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.saltar { position: absolute; left: -999px; top: 8px; background: var(--brasa); color: var(--brasa-tinta); padding: 10px 14px; border-radius: 8px; z-index: 2; }
+.saltar { position: absolute; left: -999px; top: 8px; background: var(--brasa); color: var(--brasa-tinta); padding: 10px 14px; border-radius: 8px; z-index: 5; }
 .saltar:focus { left: 16px; }
 
-.ancho { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+.ancho { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 20px; }
 
-/* Barra de arriba */
-.barra { border-bottom: 1px solid var(--linea); }
-.barra .ancho { display: flex; align-items: center; gap: 16px; min-height: 64px; flex-wrap: wrap; }
-.marca { display: flex; align-items: center; gap: 10px; color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 18px; }
-.marca img { width: 30px; height: 30px; }
-.barra nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 2px; }
-.barra nav a { color: var(--tinta-2); text-decoration: none; padding: 10px 8px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 8px; }
-@media (max-width: 520px) { .barra nav { margin-left: -6px; } .barra nav a { padding: 10px 6px; font-size: 15px; } }
-.barra nav a:hover { color: var(--tinta); background: var(--hundido); }
-
-/* La letra a mano: el mismo gesto de los títulos de la app (Inicio, el nombre de cada espacio). */
+/* La letra a mano: el gesto de los títulos de la app (Inicio, el nombre de cada espacio). */
 .mano { font-family: "Caveat", "Segoe Print", cursive; font-weight: 700; color: var(--brasa); line-height: 1.05; }
 
-/* Portada */
-.portada { padding: 56px 0 28px; }
-.portada h1 { font-size: clamp(46px, 9vw, 84px); margin: 0 0 18px; max-width: 18ch; }
-.portada .bajada { font-size: clamp(18px, 2.4vw, 21px); max-width: 60ch; margin: 0 0 28px; }
+/* Barra de arriba, sobre la lava. */
+.barra { position: relative; z-index: 2; }
+.barra .ancho { display: flex; align-items: center; gap: 12px; min-height: 72px; flex-wrap: wrap; }
+.marca { display: flex; align-items: center; gap: 10px; color: var(--tinta); text-decoration: none; font-weight: 700; font-size: 19px; letter-spacing: -0.01em; }
+.marca img { width: 32px; height: 32px; }
+.barra nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.barra nav a { color: var(--tinta); text-decoration: none; padding: 10px 10px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 10px; }
+.barra nav a:hover { background: var(--brasa-suave); }
+.tema { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--linea-fuerte); background: transparent; color: var(--tinta); cursor: pointer; margin-left: 4px; }
+.tema:hover { border-color: var(--brasa); }
+.tema svg { width: 20px; height: 20px; }
+.tema .sol { display: none; }
+[data-theme="dark"] .tema .sol { display: block; }
+[data-theme="dark"] .tema .luna { display: none; }
+@media (max-width: 560px) { .barra nav .opcional { display: none; } .barra nav a { padding: 10px 7px; font-size: 16px; } }
+
+/* Portada: la lava ocupa todo el fondo y se apaga hacia abajo. */
+.portada { position: relative; overflow: hidden; isolation: isolate; }
+#lava { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+.portada-cuerpo { padding: clamp(40px, 9vh, 110px) 0 clamp(64px, 12vh, 140px); }
+.portada h1 { font-size: clamp(44px, 7.6vw, 96px); font-weight: 700; letter-spacing: -0.035em; line-height: 0.98; margin: 0; max-width: 11.5em; text-wrap: balance; }
+.portada h1 span { display: block; }
+.nota-mano { display: inline-block; font-size: clamp(26px, 3.4vw, 38px); transform: rotate(-3deg); margin: 18px 0 0 4px; color: var(--acento); }
+.portada .bajada { font-size: clamp(18px, 2vw, 21px); max-width: 34em; margin: 26px 0 32px; }
 .acciones { display: flex; flex-wrap: wrap; gap: 12px; }
-.boton { display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; border-radius: 10px; font-weight: 600; text-decoration: none; border: 1px solid var(--linea); color: var(--tinta); background: var(--ventana); }
+.boton { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--linea-fuerte); color: var(--tinta); background: color-mix(in srgb, var(--fondo) 70%, transparent); transition: transform 0.16s var(--curva), background-color 0.16s, border-color 0.16s; }
 .boton:hover { color: var(--tinta); border-color: var(--brasa); }
+.boton:active { transform: scale(0.97); }
 .boton.principal { background: var(--brasa); color: var(--brasa-tinta); border-color: var(--brasa); }
 .boton.principal:hover { background: var(--brasa-hover); color: var(--brasa-tinta); }
-.nota { color: var(--tinta-2); font-size: 15px; margin: 14px 0 0; }
+.nota { color: var(--tinta-2); font-size: 15px; margin: 16px 0 0; }
 
-/* Capturas: la sombra separa la ventana de la página, como en Windows. */
-figure { margin: 0; }
-.captura { border: 1px solid var(--linea); border-radius: 12px; overflow: hidden; background: var(--ventana); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35); }
-figcaption { color: var(--tinta-2); font-size: 14px; margin-top: 10px; }
-.portada figure { margin-top: 44px; }
+/* Entrada de las secciones al hacer scroll: solo con JS y sin «reducir movimiento». */
+@media (prefers-reduced-motion: no-preference) {
+  .js .revelar { opacity: 0; transform: translateY(22px); transition: opacity 0.7s var(--curva), transform 0.7s var(--curva); }
+  .js .revelar.visto { opacity: 1; transform: none; }
+  .js .revelar.d1 { transition-delay: 0.08s; }
+  .js .revelar.d2 { transition-delay: 0.16s; }
+  .js .portada .revelar { transition-duration: 0.9s; }
+}
 
-section { padding: 64px 0; }
-section + section { border-top: 1px solid var(--linea); }
-h2 { font-size: clamp(36px, 6vw, 52px); margin: 0 0 20px; }
-h3 { font-size: 20px; margin: 0 0 6px; }
+section { padding: clamp(72px, 11vw, 132px) 0; }
+h2 { font-size: clamp(36px, 5.4vw, 64px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.02; margin: 0 0 18px; text-wrap: balance; }
+h3 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 8px; }
 p { margin: 0 0 14px; }
-.texto { max-width: 64ch; }
+.texto { max-width: 40em; }
+.lead { font-size: clamp(18px, 1.8vw, 20px); color: var(--tinta-2); max-width: 36em; }
+.rotulo { font-size: 30px; margin: 0 0 6px; }
+.h-grande { font-size: clamp(28px, 3.6vw, 42px); font-weight: 700; letter-spacing: -0.025em; line-height: 1.08; margin-bottom: 16px; }
 
-/* El video (y su espacio mientras no llega): 16:9, del ancho del texto. */
-#video { padding-top: 40px; }
-.video-pronto, #video video { width: 100%; max-width: 860px; aspect-ratio: 16 / 9; border-radius: 12px; }
-#video video { display: block; background: #000; border: 1px solid var(--linea); }
-.video-pronto { display: grid; place-items: center; padding: 20px; border: 1px dashed var(--linea); background: var(--hundido); color: var(--tinta-2); text-align: center; }
-.video-pronto p { margin: 0; }
+/* Demo: maqueta animada de la ventana de Chocosys. */
+.demo-pestanas { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--linea); border-radius: 14px; background: var(--hundido); margin: 30px 0 18px; flex-wrap: wrap; }
+.demo-pestanas button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 10px; background: transparent; color: var(--tinta-2); font: inherit; font-weight: 600; cursor: pointer; transition: background-color 0.2s, color 0.2s; }
+.demo-pestanas button[aria-selected="true"] { background: var(--ventana); color: var(--tinta); box-shadow: 0 0 0 1px var(--linea-fuerte); }
+.app { border: 1px solid var(--linea-fuerte); border-radius: 16px; background: var(--fondo); box-shadow: var(--sombra); overflow: hidden; }
+.app-barra { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--linea); flex-wrap: wrap; font-size: 14px; }
+.app-marca { font-size: 12px; letter-spacing: 0.24em; color: var(--tinta-2); margin-right: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid var(--linea); border-radius: 999px; color: var(--tinta-2); white-space: nowrap; }
+.chip.activo { border-color: var(--brasa); color: var(--tinta); }
+.chip .punto { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.app-barra .derecha { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.chip.necesita { color: var(--acento); border-color: color-mix(in srgb, var(--brasa) 50%, transparent); }
+.app-cuerpo { padding: 18px; min-height: 380px; background: radial-gradient(circle at 80% 0%, var(--brasa-suave), transparent 55%); }
+.app-pie { margin-top: 12px; color: var(--tinta-2); font-size: 14px; }
 
-/* Para quién: lista corrida, sin tarjetas. */
-.quienes { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
-.quienes li { padding: 8px 14px; border: 1px solid var(--linea); border-radius: 10px; background: var(--ventana); }
+.lienzo { display: grid; gap: 14px; }
+@media (min-width: 820px) { .lienzo { grid-template-columns: 1.15fr 1fr; } .lienzo .v3 { grid-column: 2; grid-row: 1 / span 2; align-self: center; } }
+.ventana { border: 1px solid var(--linea); border-radius: 12px; background: var(--ventana); overflow: hidden; transition: border-color 0.4s, box-shadow 0.4s; }
+.ventana[data-estado="necesita"] { border-color: var(--brasa); box-shadow: 0 0 0 3px var(--brasa-suave); }
+.ventana-titulo { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--linea); font-weight: 600; font-size: 15px; }
+.ventana-titulo .modelo { color: var(--tinta-2); font-weight: 400; font-size: 13px; }
+.estado { margin-left: auto; font-size: 12.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--hundido); color: var(--tinta-2); white-space: nowrap; }
+[data-estado="trabajando"] .estado { color: var(--acento); }
+[data-estado="necesita"] .estado { color: var(--brasa-tinta); background: var(--brasa); }
+[data-estado="listo"] .estado { color: var(--hecho); }
+.ventana ol { list-style: none; margin: 0; padding: 10px 12px 12px; min-height: 120px; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; font-size: 13px; line-height: 1.55; }
+.ventana li { color: var(--tinta-2); }
+.ventana li:last-child { color: var(--tinta); }
+.ventana li::before { content: "› "; color: var(--brasa); }
+@media (prefers-reduced-motion: no-preference) {
+  .ventana li { animation: linea 0.45s var(--curva) both; }
+  @keyframes linea { from { opacity: 0; transform: translateY(6px); } }
+  [data-estado="trabajando"] .estado::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: currentColor; animation: late 1.2s ease-in-out infinite; vertical-align: middle; }
+  @keyframes late { 50% { opacity: 0.25; } }
+}
 
-/* Dos columnas: texto y figura. */
-.par { display: grid; gap: 28px; align-items: center; margin-top: 36px; }
-@media (min-width: 860px) { .par { grid-template-columns: 5fr 6fr; gap: 44px; } .par.al-reves > :first-child { order: 2; } }
+.kanban { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.columna { background: var(--hundido); border: 1px solid var(--linea); border-radius: 12px; padding: 10px; }
+.columna h4 { margin: 2px 4px 10px; font-size: 14px; color: var(--tinta-2); display: flex; justify-content: space-between; }
+.tarjeta { background: var(--ventana); border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14.5px; }
+.tarjeta small { display: block; color: var(--tinta-2); font-size: 13px; margin-top: 2px; }
+.tarjeta.puerta-k { border-color: var(--brasa); }
 
-/* Maqueta de un flujo detenido en su puerta. */
-.flujo { border: 1px solid var(--linea); border-radius: 12px; background: var(--ventana); padding: 18px; }
+.flujo { max-width: 720px; }
 .flujo-titulo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 600; margin-bottom: 14px; }
 .flujo-titulo span { color: var(--tinta-2); font-weight: 400; font-size: 14px; }
 .etapas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.etapa { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 9px; background: var(--hundido); font-size: 15px; }
-.etapa .n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; border: 1px solid var(--linea); color: var(--tinta-2); }
-.etapa .estado { font-size: 13px; color: var(--tinta-2); }
-.etapa.hecha .estado { color: var(--hecho); }
-.etapa.puerta { border-color: var(--brasa); background: var(--brasa-suave); }
-.etapa.puerta .n { border-color: var(--brasa); color: var(--brasa); }
-.etapa.puerta .estado { color: var(--acento); font-weight: 600; }
-.etapa.espera { border-style: dashed; background: transparent; }
-.puerta-botones { display: flex; gap: 8px; margin: 12px 0 0 36px; flex-wrap: wrap; }
-.puerta-botones span { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--linea); font-size: 14px; }
+.etapa { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 11px 12px; border: 1px solid var(--linea); border-radius: 10px; background: var(--ventana); font-size: 15px; transition: border-color 0.4s, background-color 0.4s; }
+.etapa .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; border: 1px solid var(--linea-fuerte); color: var(--tinta-2); }
+.etapa .e { font-size: 13px; color: var(--tinta-2); }
+.etapa[data-e="listo"] .e { color: var(--hecho); }
+.etapa[data-e="trabajando"] .e { color: var(--acento); }
+.etapa.puerta { border-style: dashed; }
+.etapa.puerta[data-e="espera"] { border-style: solid; border-color: var(--brasa); background: var(--brasa-suave); }
+.etapa.puerta[data-e="espera"] .n { border-color: var(--brasa); color: var(--brasa); }
+.etapa.puerta[data-e="espera"] .e { color: var(--acento); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) {
+  .etapa.puerta[data-e="espera"] .n { animation: anillo 1.8s ease-out infinite; }
+  @keyframes anillo { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brasa) 55%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+}
+.puerta-botones { display: flex; gap: 8px; margin: 12px 0 0 38px; flex-wrap: wrap; }
+.puerta-botones span { padding: 7px 14px; border-radius: 9px; border: 1px solid var(--linea-fuerte); font-size: 14px; }
 .puerta-botones span:first-child { background: var(--brasa); color: var(--brasa-tinta); border-color: var(--brasa); font-weight: 600; }
 
-/* Las demás partes: lista de definiciones a dos columnas, separadas por línea. */
-.partes { display: grid; gap: 0 44px; margin: 44px 0 0; }
+/* Características: texto y captura, alternando lado. */
+.par { display: grid; gap: 32px; align-items: center; }
+.par + .par { margin-top: clamp(64px, 9vw, 110px); }
+@media (min-width: 880px) { .par { grid-template-columns: 5fr 6fr; gap: 64px; } .par.al-reves > :first-child { order: 2; } }
+figure { margin: 0; }
+.captura { border: 1px solid var(--linea-fuerte); border-radius: 14px; overflow: hidden; background: var(--ventana); box-shadow: var(--sombra); }
+figcaption { color: var(--tinta-2); font-size: 14px; margin-top: 10px; }
+
+.partes { display: grid; gap: 0 56px; margin: clamp(56px, 8vw, 96px) 0 0; }
 @media (min-width: 760px) { .partes { grid-template-columns: 1fr 1fr; } }
-.partes div { padding: 20px 0; border-top: 1px solid var(--linea); }
-.partes dt { font-weight: 600; font-size: 19px; margin-bottom: 4px; }
-.partes dd { margin: 0; color: var(--tinta); }
-.ademas { margin-top: 28px; color: var(--tinta-2); }
+.partes div { padding: 22px 0; border-top: 1px solid var(--linea); }
+.partes dt { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin-bottom: 4px; }
+.partes dd { margin: 0; }
+.ademas { margin-top: 28px; color: var(--tinta-2); max-width: 52em; }
+
+.franja { background: var(--hundido); border-block: 1px solid var(--linea); }
+.quienes { list-style: none; padding: 0; margin: 24px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.quienes li { padding: 9px 16px; border: 1px solid var(--linea-fuerte); border-radius: 12px; background: var(--ventana); }
+
+/* El video (y su espacio mientras no llega). */
+.video-pronto, #video video { width: 100%; max-width: 920px; aspect-ratio: 16 / 9; border-radius: 16px; }
+#video video { display: block; background: #000; border: 1px solid var(--linea); }
+.video-pronto { display: grid; place-items: center; padding: 20px; border: 1px dashed var(--linea-fuerte); background: var(--hundido); color: var(--tinta-2); text-align: center; }
+.video-pronto p { margin: 0; }
 
 /* Instalar */
-.pasos { counter-reset: paso; list-style: none; padding: 0; margin: 24px 0 0; max-width: 760px; }
-.pasos > li { counter-increment: paso; position: relative; padding: 0 0 26px 48px; }
-.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: -2px; font-family: "Caveat", cursive; font-weight: 700; font-size: 30px; color: var(--brasa); }
-pre { margin: 10px 0 0; padding: 14px 16px; background: var(--hundido); border: 1px solid var(--linea); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
-.camino { margin-top: 18px; padding: 18px 20px; border: 1px dashed var(--linea); border-radius: 12px; max-width: 760px; }
+.pasos { counter-reset: paso; list-style: none; padding: 0; margin: 28px 0 0; max-width: 760px; }
+.pasos > li { counter-increment: paso; position: relative; padding: 0 0 30px 52px; }
+.pasos > li::before { content: counter(paso); position: absolute; left: 0; top: -6px; font-family: "Caveat", cursive; font-weight: 700; font-size: 36px; color: var(--brasa); }
+pre { margin: 10px 0 0; padding: 14px 16px; background: var(--hundido); border: 1px solid var(--linea); border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; }
+.camino { margin-top: 18px; padding: 20px 22px; border: 1px dashed var(--linea-fuerte); border-radius: 14px; max-width: 760px; }
 .camino h3 { margin-bottom: 8px; }
 .camino ul { margin: 0; padding-left: 20px; }
 
-/* Inglés */
-#en { background: var(--hundido); }
-
-footer { border-top: 1px solid var(--linea); padding: 28px 0 40px; color: var(--tinta-2); font-size: 15px; }
+footer { border-top: 1px solid var(--linea); padding: 32px 0 44px; color: var(--tinta-2); font-size: 15px; }
 footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 </style>
 </head>
 <body>
 <a class="saltar" href="#contenido">Saltar al contenido</a>
 
-<header class="barra">
-  <div class="ancho">
-    <a class="marca" href="#contenido"><img src="sitio/logo.svg" alt="" width="30" height="30">Chocosys</a>
-    <nav aria-label="Secciones">
-      <a href="#que-hace">Qué hace</a>
-      <a href="#instalar">Instalar</a>
-      <a href="#en" lang="en">English</a>
-      <a href="https://github.com/camiloalonsomerino-spec/chocosys">GitHub</a>
-    </nav>
-  </div>
-</header>
-
-<main id="contenido">
-  <div class="portada">
+<div class="portada">
+  <canvas id="lava" aria-hidden="true"></canvas>
+  <header class="barra">
     <div class="ancho">
-      <h1 class="mano">Varias sesiones de Claude Code, una sola ventana.</h1>
-      <p class="bajada">Chocosys es una app de escritorio para Windows. Abre sesiones de Claude Code en terminales reales, las ordena en espacios sobre un lienzo y te avisa cuál te necesita. Para el trabajo que se repite, arma flujos que se detienen donde tú tienes que decidir.</p>
-      <div class="acciones">
+      <a class="marca" href="#contenido"><img src="sitio/logo.svg" alt="" width="32" height="32">Chocosys</a>
+      <nav aria-label="Secciones">
+        <a href="#demo">Demo</a>
+        <a href="#instalar">Instalar</a>
+        <a href="#en" lang="en" class="opcional">English</a>
+        <a href="https://github.com/camiloalonsomerino-spec/chocosys">GitHub</a>
+        <button type="button" class="tema" id="tema" aria-label="Usar el modo claro">
+          <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+          <svg class="luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+  <div class="portada-cuerpo">
+    <div class="ancho">
+      <h1><span>Varias sesiones de Claude Code.</span><span>Una sola ventana.</span></h1>
+      <p class="mano nota-mano revelar d1" aria-hidden="true">y lo importante lo apruebas tú</p>
+      <p class="bajada revelar d1">Chocosys es una app de escritorio para Windows. Abre sesiones de Claude Code en terminales reales, las ordena en espacios y te avisa cuál te necesita. Para el trabajo que se repite, arma flujos que se detienen donde tú tienes que decidir.</p>
+      <div class="acciones revelar d2">
         <a class="boton principal" href="#instalar">Cómo instalarla</a>
-        <a class="boton" href="https://github.com/camiloalonsomerino-spec/chocosys">Ver el código en GitHub</a>
+        <a class="boton" href="#demo">Ver cómo funciona</a>
       </div>
-      <p class="nota">Gratis y sin fines comerciales. Corre con tu propia cuenta de Claude Code.</p>
-      <figure>
-        <div class="captura"><img src="sitio/img/inicio.webp" width="1802" height="1020" alt="Pantalla de Inicio de Chocosys en tema oscuro: arriba las pestañas y el consumo de CPU, RAM y GPU; al centro los recuadros «Te necesitan» y «Flujos corriendo»; a la derecha la lista de lo que requiere atención hoy en el CRM; abajo la barra de comando."></div>
-        <figcaption>El Inicio, con el CRM de prueba que trae la app (captura real del 13-11-2026).</figcaption>
-      </figure>
+      <p class="nota revelar d2">Gratis y sin fines comerciales. Corre con tu propia cuenta de Claude Code.</p>
     </div>
   </div>
+</div>
 
-  <section id="video" aria-labelledby="t-video">
+<main id="contenido">
+  <section id="demo" aria-labelledby="t-demo">
     <div class="ancho">
-      <h2 class="mano" id="t-video">Míralo andando</h2>
+      <p class="mano rotulo revelar" aria-hidden="true">así se ve</p>
+      <h2 class="revelar" id="t-demo">Todo lo que corre, a la vista.</h2>
+      <p class="lead revelar">Cada sesión trabaja en su ventana. Las que terminan o te preguntan algo se marcan, y las que siguen trabajando no te interrumpen.</p>
+
+      <div class="demo-pestanas revelar" role="tablist" aria-label="Vistas de la maqueta">
+        <button type="button" role="tab" id="p-sesiones" aria-controls="v-sesiones" aria-selected="true">Sesiones</button>
+        <button type="button" role="tab" id="p-kanban" aria-controls="v-kanban" aria-selected="false" tabindex="-1">Kanban</button>
+        <button type="button" role="tab" id="p-flujo" aria-controls="v-flujo" aria-selected="false" tabindex="-1">Flujo</button>
+      </div>
+
+      <div class="app revelar">
+        <div class="app-barra" aria-hidden="true">
+          <span class="app-marca">CHOCOSYS</span>
+          <span class="chip">Inicio</span>
+          <span class="chip activo">Tesis</span>
+          <span class="chip">Tienda</span>
+          <span class="derecha"><span class="chip necesita" id="cuenta-necesita"><span class="punto"></span>0 te necesitan</span><span class="chip" id="cuenta-trabajando">3 trabajando</span></span>
+        </div>
+        <div class="app-cuerpo">
+          <div role="tabpanel" id="v-sesiones" aria-labelledby="p-sesiones" tabindex="0">
+            <div class="lienzo">
+              <div class="ventana v1" data-estado="trabajando"><div class="ventana-titulo">Capítulo 2 <span class="modelo">opus</span><span class="estado">trabajando</span></div><ol></ol></div>
+              <div class="ventana v2" data-estado="trabajando"><div class="ventana-titulo">Planilla de ventas <span class="modelo">sonnet</span><span class="estado">trabajando</span></div><ol></ol></div>
+              <div class="ventana v3" data-estado="trabajando"><div class="ventana-titulo">Fotos del catálogo <span class="modelo">haiku</span><span class="estado">trabajando</span></div><ol></ol></div>
+            </div>
+          </div>
+          <div role="tabpanel" id="v-kanban" aria-labelledby="p-kanban" tabindex="0" hidden>
+            <div class="kanban">
+              <div class="columna"><h4>Esperando <span>1</span></h4><div class="tarjeta">Respaldo de fotos<small>parte a las 21:00</small></div></div>
+              <div class="columna"><h4>Trabajando <span>2</span></h4><div class="tarjeta">Ordenar apuntes<small>etapa 1 de 3</small></div><div class="tarjeta">Resumen del mes<small>etapa 2 de 4</small></div></div>
+              <div class="columna"><h4>En la puerta <span>1</span></h4><div class="tarjeta puerta-k">Informe de la semana<small>espera tu revisión</small></div></div>
+              <div class="columna"><h4>Terminado <span>1</span></h4><div class="tarjeta">Lista de compras<small>hoy, 10:42</small></div></div>
+            </div>
+          </div>
+          <div role="tabpanel" id="v-flujo" aria-labelledby="p-flujo" tabindex="0" hidden>
+            <div class="flujo">
+              <div class="flujo-titulo">Informe de la semana <span id="flujo-estado">corriendo</span></div>
+              <ol class="etapas">
+                <li class="etapa" data-e="pendiente"><span class="n">1</span><span>Escribir el informe · haiku</span><span class="e">pendiente</span></li>
+                <li class="etapa" data-e="pendiente"><span class="n">2</span><span>Guardarlo en la carpeta del trabajo</span><span class="e">pendiente</span></li>
+                <li class="etapa" data-e="pendiente"><span class="n">3</span><span>Anotarlo en el CRM</span><span class="e">pendiente</span></li>
+                <li class="etapa puerta" data-e="pendiente"><span class="n">!</span><span>Puerta crítica: revisar antes de enviar</span><span class="e">pendiente</span></li>
+                <li class="etapa" data-e="pendiente"><span class="n">5</span><span>Enviar el correo</span><span class="e">pendiente</span></li>
+              </ol>
+              <div class="puerta-botones" aria-hidden="true"><span>Aprobar y seguir</span><span>Pedir cambios</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="app-pie">Maqueta animada con datos inventados. Las capturas de más abajo son de la app real.</p>
+    </div>
+  </section>
+
+  <section id="video" class="franja" aria-labelledby="t-video">
+    <div class="ancho">
+      <h2 class="revelar" id="t-video">Míralo andando.</h2>
       <!-- Para poner el video: dejar el archivo en docs/sitio/video/ y cambiar el div.video-pronto por
            <video controls preload="metadata" poster="sitio/img/inicio.webp" src="sitio/video/<archivo>.mp4"></video> -->
-      <div class="video-pronto" role="note">
+      <div class="video-pronto revelar" role="note">
         <p>El video de presentación está en preparación.</p>
       </div>
     </div>
   </section>
 
-  <section id="para-quien" aria-labelledby="t-para-quien">
+  <section id="que-hace" aria-labelledby="t-que-hace">
     <div class="ancho">
-      <h2 class="mano" id="t-para-quien">Para quién es</h2>
-      <div class="texto">
-        <p>Para quien ya usa Claude Code y tiene más de una cosa andando a la vez: una sesión ordena apuntes, otra revisa una planilla, otra espera que le respondas. En vez de diez terminales sueltas, las ves todas juntas y sabes cuál está trabajando, cuál terminó y cuál te hizo una pregunta.</p>
-        <p>Trabaja sobre las carpetas reales de tu computador, no sobre copias en otro lugar.</p>
+      <h2 class="oculto" id="t-que-hace">Qué hace</h2>
+      <div class="par">
+        <div class="revelar">
+          <p class="mano rotulo" aria-hidden="true">sesiones</p>
+          <h3 class="h-grande">Terminales reales, no una imitación.</h3>
+          <p>Cada sesión es una ventana con su propia terminal, la misma de Claude Code: le escribes, lees lo que hace y la mueves por el lienzo. Agrupas las ventanas en espacios (uno por proyecto, por ramo o por cliente), cada uno con su pestaña.</p>
+          <p>Si cierras la app, al abrirla de nuevo cada sesión retoma su conversación.</p>
+        </div>
+        <figure class="revelar d1">
+          <div class="captura"><img src="sitio/img/espacio.webp" width="830" height="470" loading="lazy" decoding="async" alt="Un espacio llamado «Fuentes» con una ventana de sesión sobre el lienzo; la terminal muestra un texto de muestra."></div>
+          <figcaption>Un espacio con una ventana de sesión (texto de muestra, no una sesión real).</figcaption>
+        </figure>
       </div>
-      <ul class="quienes" aria-label="Ejemplos de uso">
+
+      <div class="par al-reves">
+        <div class="revelar">
+          <p class="mano rotulo" aria-hidden="true">flujos</p>
+          <h3 class="h-grande">Recetas que se detienen donde decides tú.</h3>
+          <p>Un flujo es una receta en un archivo de texto: etapas en orden (o en paralelo), cada una con su instrucción y su modelo. Entre etapa y etapa puede haber una puerta, donde el flujo espera tu revisión.</p>
+          <p>Cuando lo que sigue no se deshace (enviar un correo, emitir un documento), la puerta es crítica: se aprueba solo en la ventana, y ninguna sesión puede aprobarla por ti. Para probar una receta sin riesgo, la lanzas en simulacro.</p>
+        </div>
+        <figure class="revelar d1">
+          <div class="captura"><img src="sitio/img/inicio.webp" width="1802" height="1020" loading="lazy" decoding="async" alt="Pantalla de Inicio de Chocosys: arriba las pestañas y el consumo de CPU, RAM y GPU; al centro «Te necesitan» y «Flujos corriendo»; a la derecha lo que requiere atención hoy en el CRM; abajo la barra de comando."></div>
+          <figcaption>El Inicio, con el CRM de prueba que trae la app (captura real del 13-11-2026).</figcaption>
+        </figure>
+      </div>
+
+      <dl class="partes">
+        <div class="revelar">
+          <dt>La bandeja</dt>
+          <dd>Junta lo que te necesita primero: una pregunta, una puerta, una sesión que terminó. <kbd>Ctrl+Tab</kbd> salta a lo siguiente.</dd>
+        </div>
+        <div class="revelar d1">
+          <dt>La central</dt>
+          <dd>Si la activas, una sesión que Chocosys abre al iniciar y queda siempre a mano, también desde el celular con Remote Control. Le pides un encargo, ella lo reparte en las sesiones que hagan falta y te avisa cuando termina.</dd>
+        </div>
+        <div class="revelar">
+          <dt>Tareas programadas</dt>
+          <dd>Una orden, una sesión nueva o un flujo que corre a una hora, una vez o cada cierto tiempo. Decides si una tarea atrasada se corre al abrir la app o se salta.</dd>
+        </div>
+        <div class="revelar d1">
+          <dt>CRM básico</dt>
+          <dd>Empresas, contactos, negocios en un embudo y actividades con su fecha. Trae plantillas de embudo según el tipo de negocio y guarda todo en una base local, en tu computador.</dd>
+        </div>
+        <div class="revelar">
+          <dt>Barra de comando</dt>
+          <dd><kbd>Ctrl+Shift+K</kbd>: una orden abre una sesión nueva; <code>@nombre: orden</code> le escribe a una que ya existe.</dd>
+        </div>
+        <div class="revelar d1">
+          <dt>Segunda opinión</dt>
+          <dd>Asesores con intereses distintos (caja, riesgo, operación) evalúan una decisión, se confrontan y entregan un veredicto.</dd>
+        </div>
+      </dl>
+      <p class="ademas revelar">Además: CPU, RAM y GPU con lo que consume cada sesión; un servidor MCP para que una sesión lea el estado, abra otras y lance flujos (aprobar puertas, no); <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/docs/fuentes.md">fuentes propias</a> para la interfaz y la terminal; y dos ediciones livianas, solo terminales o terminales con flujos.</p>
+    </div>
+  </section>
+
+  <section id="para-quien" class="franja" aria-labelledby="t-para-quien">
+    <div class="ancho">
+      <h2 class="revelar" id="t-para-quien">Para quien tiene más de una cosa andando.</h2>
+      <div class="texto revelar">
+        <p>Una sesión ordena apuntes, otra revisa una planilla, otra espera que le respondas. En vez de diez terminales sueltas, las ves juntas y sabes cuál trabaja, cuál terminó y cuál te hizo una pregunta. Trabaja sobre las carpetas reales de tu computador, no sobre copias en otro lugar.</p>
+      </div>
+      <ul class="quienes revelar d1" aria-label="Ejemplos de uso">
         <li>Un estudiante con varios ramos</li>
         <li>Alguien que estudia y emprende</li>
         <li>Quien lleva un negocio chico</li>
@@ -216,99 +415,31 @@ footer .ancho { display: flex; flex-wrap: wrap; gap: 8px 24px; }
     </div>
   </section>
 
-  <section id="que-hace" aria-labelledby="t-que-hace">
-    <div class="ancho">
-      <h2 class="mano" id="t-que-hace">Qué hace</h2>
-
-      <div class="par">
-        <div>
-          <h3>Sesiones en terminales reales</h3>
-          <p>Cada sesión es una ventana con su propia terminal, la misma de Claude Code: puedes escribirle, leer lo que hace y moverla por el lienzo. Agrupas las ventanas en espacios (uno por proyecto, por ramo o por cliente), cada uno con su pestaña.</p>
-          <p>Si cierras la app, al abrirla de nuevo cada sesión retoma su conversación.</p>
-        </div>
-        <figure>
-          <div class="captura"><img src="img/fuentes-1-de-fabrica.png" width="830" height="470" loading="lazy" alt="Un espacio llamado «Fuentes» con una ventana de sesión sobre el lienzo; la terminal muestra un texto de muestra."></div>
-          <figcaption>Un espacio con una ventana de sesión. La terminal muestra un texto de muestra, no una sesión real.</figcaption>
-        </figure>
-      </div>
-
-      <div class="par al-reves">
-        <div>
-          <h3>Flujos con puertas que apruebas tú</h3>
-          <p>Un flujo es una receta en un archivo de texto: etapas en orden (o en paralelo), cada una con su instrucción y su modelo. Entre etapa y etapa puede haber una puerta, donde el flujo se detiene hasta que lo revisas.</p>
-          <p>Cuando lo que sigue no se deshace (enviar un correo, emitir un documento), la puerta es crítica. Se aprueba solo en la ventana: ninguna sesión puede aprobarla por ti. Para probar una receta sin riesgo, la lanzas en simulacro.</p>
-        </div>
-        <figure>
-          <div class="flujo" aria-hidden="true">
-            <div class="flujo-titulo">Informe de la semana <span>flujo detenido</span></div>
-            <ol class="etapas">
-              <li class="etapa hecha"><span class="n">1</span><span>Escribir el informe · haiku</span><span class="estado">listo</span></li>
-              <li class="etapa hecha"><span class="n">2</span><span>Guardarlo en la carpeta del trabajo</span><span class="estado">listo</span></li>
-              <li class="etapa hecha"><span class="n">3</span><span>Anotarlo en el CRM</span><span class="estado">listo</span></li>
-              <li class="etapa puerta"><span class="n">!</span><span>Puerta crítica: revisar el informe antes de enviarlo</span><span class="estado">te espera</span></li>
-              <li class="etapa espera"><span class="n">5</span><span>Enviar el correo</span><span class="estado">pendiente</span></li>
-            </ol>
-            <div class="puerta-botones"><span>Aprobar y seguir</span><span>Pedir cambios</span></div>
-          </div>
-          <figcaption>Maqueta en HTML, armada con la receta de ejemplo que trae la app (datos inventados). En la app, la puerta muestra los archivos que tienes que revisar.</figcaption>
-        </figure>
-      </div>
-
-      <dl class="partes">
-        <div>
-          <dt>La bandeja</dt>
-          <dd>Junta lo que te necesita primero: una pregunta, una puerta, una sesión que terminó. <kbd>Ctrl+Tab</kbd> salta a lo siguiente.</dd>
-        </div>
-        <div>
-          <dt>La central</dt>
-          <dd>Si la activas, una sesión que Chocosys abre al iniciar y queda siempre a mano, también desde el celular con Remote Control. Le pides un encargo y ella reparte el trabajo en las sesiones que hagan falta, y te avisa cuando termina.</dd>
-        </div>
-        <div>
-          <dt>Tareas programadas</dt>
-          <dd>Una orden, una sesión nueva o un flujo que corre a una hora, una vez o cada cierto tiempo. Decides si una tarea atrasada se corre al abrir la app o se salta.</dd>
-        </div>
-        <div>
-          <dt>CRM básico</dt>
-          <dd>Empresas, contactos, negocios en un embudo y actividades con su fecha. Trae plantillas de embudo según el tipo de negocio y guarda todo en una base local, en tu computador.</dd>
-        </div>
-        <div>
-          <dt>Barra de comando</dt>
-          <dd><kbd>Ctrl+Shift+K</kbd>: una orden abre una sesión nueva; <code>@nombre: orden</code> le escribe a una que ya existe.</dd>
-        </div>
-        <div>
-          <dt>Segunda opinión</dt>
-          <dd>Asesores con intereses distintos (caja, riesgo, operación) evalúan una decisión, se confrontan y entregan un veredicto.</dd>
-        </div>
-      </dl>
-      <p class="ademas">Además: CPU, RAM y GPU con lo que consume cada sesión; un servidor MCP para que una sesión lea el estado, abra otras y lance flujos (aprobar puertas, no); <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/docs/fuentes.md">fuentes propias</a> para la interfaz y la terminal; y dos ediciones livianas, solo terminales o terminales con flujos.</p>
-    </div>
-  </section>
-
   <section id="datos" aria-labelledby="t-datos">
     <div class="ancho">
-      <h2 class="mano" id="t-datos">Tus datos</h2>
-      <div class="texto">
+      <h2 class="revelar" id="t-datos">Tus datos se quedan contigo.</h2>
+      <div class="texto revelar">
         <p>Chocosys no tiene servidor y no envía nada por su cuenta. Lo que guarda (sesiones, espacios, CRM, tareas) queda en tu computador, en <code>%APPDATA%\consola-agentes\</code>. Lo que escribes en una sesión viaja a Claude como en cualquier terminal de Claude Code.</p>
         <p>Si algo falla, la app arma un reporte con rutas, correos y claves tachados. Lo revisas y lo envías tú, si quieres.</p>
       </div>
     </div>
   </section>
 
-  <section id="instalar" aria-labelledby="t-instalar">
+  <section id="instalar" class="franja" aria-labelledby="t-instalar">
     <div class="ancho">
-      <h2 class="mano" id="t-instalar">Cómo instalarla</h2>
-      <p class="texto">Hoy funciona en Windows 10 y 11, y se abre desde el código.</p>
+      <h2 class="revelar" id="t-instalar">Cómo instalarla.</h2>
+      <p class="lead revelar">Hoy funciona en Windows 10 y 11, y se abre desde el código.</p>
       <ol class="pasos">
-        <li>
+        <li class="revelar">
           <h3>Lo que necesitas antes</h3>
           <p><a href="https://nodejs.org">Node.js</a> 20 o más nuevo, y <a href="https://docs.anthropic.com/claude-code">Claude Code</a> instalado y con tu sesión iniciada: el comando <code>claude</code> tiene que abrir en una terminal.</p>
         </li>
-        <li>
+        <li class="revelar">
           <h3>Baja el código</h3>
           <p>Con Git, o con el botón <em>Code › Download ZIP</em> del repositorio.</p>
 <pre><code>git clone https://github.com/camiloalonsomerino-spec/chocosys.git</code></pre>
         </li>
-        <li>
+        <li class="revelar">
           <h3>Instala y abre</h3>
 <pre><code>cd chocosys\app
 npm install
@@ -316,7 +447,7 @@ npm start</code></pre>
           <p class="nota">Para tener un instalador <code>.exe</code> propio: <code>npm run instalador</code>.</p>
         </li>
       </ol>
-      <div class="camino">
+      <div class="camino revelar">
         <h3>En camino</h3>
         <ul>
           <li>Una versión para Mac.</li>
@@ -329,19 +460,19 @@ npm start</code></pre>
 
   <section id="licencia" aria-labelledby="t-licencia">
     <div class="ancho">
-      <h2 class="mano" id="t-licencia">Licencia</h2>
-      <div class="texto">
-        <p>Chocosys es un proyecto sin fines comerciales. Puedes usarla, estudiarla, copiarla y cambiarla para fines personales, de estudio, de investigación o de una organización sin fines de lucro. Para un uso comercial hay que pedir permiso.</p>
+      <h2 class="revelar" id="t-licencia">Sin fines comerciales.</h2>
+      <div class="texto revelar">
+        <p>Puedes usar, estudiar, copiar y cambiar Chocosys para fines personales, de estudio, de investigación o de una organización sin fines de lucro. Para un uso comercial hay que pedir permiso.</p>
         <p>La licencia es la <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a>. Por esa condición no es «open source» según la OSI: el código está abierto para leerlo y cambiarlo, pero no para venderlo. Detalle en el <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/AVISO.md">aviso</a>.</p>
         <p>¿Encontraste un fallo o tienes una idea? <a href="https://github.com/camiloalonsomerino-spec/chocosys/issues/new/choose">Abre un issue</a> con texto y capturas.</p>
       </div>
     </div>
   </section>
 
-  <section id="en" lang="en" aria-labelledby="t-en">
+  <section id="en" class="franja" lang="en" aria-labelledby="t-en">
     <div class="ancho">
-      <h2 class="mano" id="t-en">In English</h2>
-      <div class="texto">
+      <h2 class="revelar" id="t-en">In English.</h2>
+      <div class="texto revelar">
         <p>Chocosys is a Windows desktop app that runs several Claude Code sessions in real terminals, groups them into spaces on a canvas and tells you which one needs you. It adds flows (YAML recipes with stages and gates you approve in the window), a central session that splits work across sessions, scheduled tasks and a small local CRM. The interface is in Spanish.</p>
         <p>It needs Windows 10 or 11, Node.js 20+ and Claude Code signed in. Clone the repository, then run <code>npm install</code> and <code>npm start</code> inside <code>app</code>. A Mac version and choosing your Claude plan (Pro or Max) in the app are on the way, with no date yet.</p>
         <p>Non-commercial project under the <a href="https://github.com/camiloalonsomerino-spec/chocosys/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a> license. <a href="https://github.com/camiloalonsomerino-spec/chocosys">Source on GitHub</a>.</p>
@@ -357,5 +488,245 @@ npm start</code></pre>
     <span>Tipografías Instrument Sans y Caveat (SIL OFL 1.1)</span>
   </div>
 </footer>
+
+<script>
+(function () {
+  'use strict';
+  var raiz = document.documentElement;
+  var quieto = matchMedia('(prefers-reduced-motion: reduce)');
+  var angosto = matchMedia('(max-width: 760px)');
+
+  /* ---------- Tema claro y oscuro ---------- */
+  var botonTema = document.getElementById('tema');
+  function rotularTema() {
+    botonTema.setAttribute('aria-label', raiz.dataset.theme === 'dark' ? 'Usar el modo claro' : 'Usar el modo oscuro');
+    document.querySelector('meta[name="theme-color"]').content = raiz.dataset.theme === 'dark' ? '#0b0a09' : '#f7f5f2';
+  }
+  botonTema.addEventListener('click', function () {
+    raiz.dataset.theme = raiz.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('chocosys-tema', raiz.dataset.theme); } catch (e) {}
+    rotularTema(); lava.colores();
+  });
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', function (e) {
+    var guardado = null;
+    try { guardado = localStorage.getItem('chocosys-tema'); } catch (x) {}
+    if (guardado) return;
+    raiz.dataset.theme = e.matches ? 'light' : 'dark'; rotularTema(); lava.colores();
+  });
+  rotularTema();
+
+  /* ---------- Lava de la portada: metaballs en WebGL, respaldo en canvas 2D ---------- */
+  var lava = (function () {
+    var lienzo = document.getElementById('lava');
+    var portada = lienzo.parentElement;
+    var gotas = [ // centro (fracción del ancho y del alto), recorrido, velocidad, fase, radio
+      { x: 0.82, y: 0.58, ax: 0.08, ay: 0.14, sx: 0.31, sy: 0.23, f: 0.0, r: 0.20 },
+      { x: 0.70, y: 0.36, ax: 0.10, ay: 0.12, sx: 0.19, sy: 0.27, f: 1.7, r: 0.15 },
+      { x: 0.93, y: 0.30, ax: 0.06, ay: 0.16, sx: 0.23, sy: 0.17, f: 3.1, r: 0.15 },
+      { x: 0.76, y: 0.86, ax: 0.10, ay: 0.08, sx: 0.17, sy: 0.29, f: 4.4, r: 0.17 },
+      { x: 0.62, y: 0.66, ax: 0.08, ay: 0.12, sx: 0.27, sy: 0.21, f: 2.2, r: 0.11 },
+      { x: 0.98, y: 0.74, ax: 0.05, ay: 0.12, sx: 0.21, sy: 0.33, f: 5.3, r: 0.14 },
+      { x: 0.86, y: 0.10, ax: 0.08, ay: 0.06, sx: 0.29, sy: 0.19, f: 0.9, r: 0.10 }
+    ];
+    var gl = null, ctx = null, prog, u = {}, c = {}, visible = true, pedido = 0, ultimo = 0, t0 = performance.now();
+
+    function hex(nombre) {
+      var h = getComputedStyle(raiz).getPropertyValue(nombre).trim().replace('#', '');
+      return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255];
+    }
+    function colores() { c.fondo = hex('--fondo'); c.nucleo = hex('--lava-nucleo'); c.borde = hex('--lava-borde'); dibujar(); }
+
+    var FS = 'precision mediump float;uniform vec2 res;uniform vec3 g[7];uniform vec3 cF,cN,cB;uniform float gan,masc;' +
+      'void main(){vec2 q=gl_FragCoord.xy/res.y;float f=0.;' +
+      'for(int i=0;i<7;i++){vec2 d=q-g[i].xy;f+=g[i].z*g[i].z/max(dot(d,d),1e-4);}' +
+      'float cuerpo=smoothstep(.94,1.06,f),halo=smoothstep(.45,.94,f)*.22;' +
+      'vec3 col=mix(cB,cN,smoothstep(1.0,2.4,f));float a=max(cuerpo,halo)*gan;' +
+      'float x=gl_FragCoord.x/res.x,y=gl_FragCoord.y/res.y;' +
+      'a*=mix(1.,smoothstep(.3,.8,x),masc);a*=smoothstep(0.,.3,y);' + // deja limpio el lado del texto y se apaga abajo
+      'gl_FragColor=vec4(mix(cF,col,a),1.);}';
+
+    function iniciarGL() {
+      gl = lienzo.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' });
+      if (!gl) return false;
+      function sh(tipo, src) { var s = gl.createShader(tipo); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; }
+      var vs = sh(gl.VERTEX_SHADER, 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}'), fs = sh(gl.FRAGMENT_SHADER, FS);
+      if (!vs || !fs) { gl = null; return false; }
+      prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { gl = null; return false; }
+      gl.useProgram(prog);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      var p = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(p); gl.vertexAttribPointer(p, 2, gl.FLOAT, false, 0, 0);
+      ['res', 'g', 'cF', 'cN', 'cB', 'gan', 'masc'].forEach(function (n) { u[n] = gl.getUniformLocation(prog, n); });
+      lienzo.addEventListener('webglcontextlost', function (e) { e.preventDefault(); cancelAnimationFrame(pedido); gl = null; });
+      return true;
+    }
+
+    function medir() {
+      // shortcut: resolución fija baja (la lava es difusa); subirla solo si se ve granulada en pantallas grandes.
+      var escala = angosto.matches ? 0.3 : 0.55;
+      lienzo.width = Math.max(64, Math.round(lienzo.clientWidth * escala));
+      lienzo.height = Math.max(64, Math.round(lienzo.clientHeight * escala));
+      if (gl) gl.viewport(0, 0, lienzo.width, lienzo.height);
+      dibujar();
+    }
+
+    function posiciones(t) {
+      var asp = lienzo.width / lienzo.height, movil = angosto.matches, n = movil ? 5 : 7, out = [];
+      for (var i = 0; i < 7; i++) {
+        var g = gotas[i];
+        var x = (movil ? 0.15 + g.x * 0.75 : g.x) + g.ax * Math.sin(t * g.sx + g.f);
+        var y = (movil ? 0.25 + g.y * 0.7 : g.y) + g.ay * Math.cos(t * g.sy + g.f * 1.3);
+        out.push({ x: x * asp, y: 1 - y, r: i < n ? g.r * (movil ? 1.35 : 1) : 0 });
+      }
+      return out;
+    }
+
+    function dibujar(ahora) {
+      if (!c.fondo) return;
+      var t = quieto.matches ? 8 : ((ahora || performance.now()) - t0) / 1000;
+      var gs = posiciones(t), movil = angosto.matches;
+      var ganancia = movil ? 0.42 : 0.95;
+      if (gl) {
+        var arr = [];
+        gs.forEach(function (g) { arr.push(g.x, g.y, g.r); });
+        gl.uniform2f(u.res, lienzo.width, lienzo.height);
+        gl.uniform3fv(u.g, arr);
+        gl.uniform3fv(u.cF, c.fondo); gl.uniform3fv(u.cN, c.nucleo); gl.uniform3fv(u.cB, c.borde);
+        gl.uniform1f(u.gan, ganancia); gl.uniform1f(u.masc, movil ? 0 : 1);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } else if (ctx) {
+        var w = lienzo.width, h = lienzo.height, css = function (v, a) { return 'rgba(' + v.map(function (x) { return Math.round(x * 255); }).join(',') + ',' + a + ')'; };
+        ctx.fillStyle = css(c.fondo, 1); ctx.fillRect(0, 0, w, h);
+        gs.forEach(function (g) {
+          if (!g.r) return;
+          var x = g.x * h, y = (1 - g.y) * h, r = g.r * h * 2.2;
+          var gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+          gr.addColorStop(0, css(c.nucleo, ganancia)); gr.addColorStop(0.45, css(c.nucleo, ganancia * 0.7)); gr.addColorStop(1, css(c.borde, 0));
+          ctx.fillStyle = gr; ctx.fillRect(0, 0, w, h);
+        });
+        var velo = ctx.createLinearGradient(0, 0, w, 0); // el mismo resguardo del texto que en WebGL
+        velo.addColorStop(0, css(c.fondo, movil ? 0.5 : 1)); velo.addColorStop(movil ? 1 : 0.45, css(c.fondo, movil ? 0.5 : 0.9)); velo.addColorStop(1, css(c.fondo, 0));
+        ctx.fillStyle = velo; ctx.fillRect(0, 0, w, h);
+        var abajo = ctx.createLinearGradient(0, h * 0.7, 0, h);
+        abajo.addColorStop(0, css(c.fondo, 0)); abajo.addColorStop(1, css(c.fondo, 1));
+        ctx.fillStyle = abajo; ctx.fillRect(0, 0, w, h);
+      }
+    }
+
+    function cuadro(ahora) {
+      pedido = 0;
+      if (!visible || document.hidden || quieto.matches) return;
+      if (ahora - ultimo > 32) { ultimo = ahora; dibujar(ahora); } // ~30 cuadros por segundo bastan para algo tan lento
+      pedido = requestAnimationFrame(cuadro);
+    }
+    function andar() { if (!pedido && visible && !document.hidden && !quieto.matches && (gl || ctx)) pedido = requestAnimationFrame(cuadro); }
+
+    if (!iniciarGL()) ctx = lienzo.getContext('2d');
+    colores(); medir();
+    new ResizeObserver(medir).observe(portada);
+    new IntersectionObserver(function (es) { visible = es[0].isIntersecting; andar(); }).observe(portada);
+    document.addEventListener('visibilitychange', andar);
+    quieto.addEventListener('change', function () { dibujar(); andar(); });
+    angosto.addEventListener('change', medir);
+    andar();
+    return { colores: colores };
+  })();
+
+  /* ---------- Entrada de las secciones ---------- */
+  var porVer = document.querySelectorAll('.revelar');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    porVer.forEach(function (el) { io.observe(el); });
+  } else porVer.forEach(function (el) { el.classList.add('visto'); });
+
+  /* ---------- Pestañas de la maqueta (flechas, Inicio y Fin, como un tablist) ---------- */
+  var pestanas = [].slice.call(document.querySelectorAll('[role="tab"]'));
+  function elegir(p) {
+    pestanas.forEach(function (o) {
+      var si = o === p;
+      o.setAttribute('aria-selected', si); o.tabIndex = si ? 0 : -1;
+      document.getElementById(o.getAttribute('aria-controls')).hidden = !si;
+    });
+    if (p.id === 'p-flujo') flujo.reiniciar();
+  }
+  pestanas.forEach(function (p, i) {
+    p.addEventListener('click', function () { elegir(p); });
+    p.addEventListener('keydown', function (e) {
+      var j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: pestanas.length - 1 }[e.key];
+      if (j === undefined) return;
+      e.preventDefault(); var q = pestanas[(j + pestanas.length) % pestanas.length]; q.focus(); elegir(q);
+    });
+  });
+
+  /* ---------- Sesiones de la maqueta: líneas que llegan y estados que cambian ---------- */
+  var guiones = [
+    { v: '.v1', fin: 'necesita', l: ['Leí los apuntes de la carpeta tesis/fuentes.', 'Armé el esquema del capítulo en cinco partes.', 'Escribí la sección 2.1.', '¿Sigo con la 2.2 o la revisas primero?'] },
+    { v: '.v2', fin: 'listo', l: ['Abrí ventas-octubre.xlsx.', 'Hay tres filas con el total mal sumado.', 'Las corregí y dejé una copia de la original.', 'Listo: el resumen quedó en resumen-octubre.md'] },
+    { v: '.v3', fin: 'trabajando', l: ['Encontré las fotos en catalogo/crudas.', 'Les pongo el nombre del producto a cada una.', 'Van 12.', 'Van 27.', 'Van 41.'] }
+  ];
+  var nombres = { trabajando: 'trabajando', necesita: 'te necesita', listo: 'listo' };
+  var demo = document.getElementById('demo'), paso = 0, reloj = 0, demoVisible = false;
+  function estado(v, e) { v.dataset.estado = e; v.querySelector('.estado').textContent = nombres[e]; }
+  function contar() {
+    var vs = demo.querySelectorAll('.ventana'), n = 0, w = 0;
+    vs.forEach(function (v) { if (v.dataset.estado === 'necesita') n++; if (v.dataset.estado === 'trabajando') w++; });
+    var chip = document.getElementById('cuenta-necesita');
+    chip.lastChild.textContent = n === 1 ? '1 te necesita' : n + ' te necesitan';
+    chip.classList.toggle('necesita', n > 0);
+    document.getElementById('cuenta-trabajando').textContent = w + ' trabajando';
+  }
+  function sesionesEn(k) { // deja la maqueta como queda después de k líneas
+    guiones.forEach(function (g) {
+      var v = demo.querySelector(g.v), ol = v.querySelector('ol'), hechas = Math.min(g.l.length, k);
+      if (ol.children.length > hechas) ol.innerHTML = ''; // solo se agregan las líneas nuevas, para que no se repita su entrada
+      for (var i = ol.children.length; i < hechas; i++) { var li = document.createElement('li'); li.textContent = g.l[i]; ol.appendChild(li); }
+      estado(v, hechas >= g.l.length ? g.fin : 'trabajando');
+    });
+    contar();
+  }
+  function tic() {
+    paso = paso >= 8 ? 1 : paso + 1; // 8: la maqueta queda quieta un momento y vuelve a empezar
+    sesionesEn(Math.min(paso, 5));
+  }
+  function demoAndar() {
+    clearInterval(reloj); reloj = 0;
+    if (quieto.matches) { sesionesEn(5); return; }
+    if (demoVisible && !document.hidden) reloj = setInterval(tic, 1700);
+  }
+
+  /* ---------- Flujo de la maqueta: avanza hasta la puerta y la espera ---------- */
+  var flujo = (function () {
+    var etapas = [].slice.call(demo.querySelectorAll('.etapa')), r = 0, k = 0;
+    var textos = { pendiente: 'pendiente', trabajando: 'trabajando', listo: 'listo', espera: 'te espera' };
+    function poner(n) {
+      etapas.forEach(function (e, i) {
+        var s = i < n ? 'listo' : i === n ? (e.classList.contains('puerta') ? 'espera' : 'trabajando') : 'pendiente';
+        e.dataset.e = s; e.querySelector('.e').textContent = textos[s];
+      });
+      document.getElementById('flujo-estado').textContent = n >= 3 ? 'detenido en la puerta' : 'corriendo';
+    }
+    function reiniciar() {
+      clearInterval(r);
+      if (quieto.matches) { poner(3); return; }
+      k = 0; poner(0);
+      r = setInterval(function () { k++; poner(k); if (k >= 3) clearInterval(r); }, 1300);
+    }
+    poner(3);
+    return { reiniciar: reiniciar };
+  })();
+
+  new IntersectionObserver(function (es) {
+    var antes = demoVisible; demoVisible = es[0].isIntersecting;
+    demoAndar();
+    if (demoVisible && !antes && !document.getElementById('v-flujo').hidden) flujo.reiniciar();
+  }, { threshold: 0.2 }).observe(demo);
+  document.addEventListener('visibilitychange', demoAndar);
+  quieto.addEventListener('change', demoAndar);
+  sesionesEn(quieto.matches ? 5 : 1);
+})();
+</script>
 </body>
 </html>
