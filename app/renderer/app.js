@@ -156,7 +156,7 @@ function terminal(id) {
   const previo = (sessionStorage.getItem('tam-' + id) || '').split('x').map(Number);
   const term = new Terminal({
     fontFamily: '"Cascadia Code Variable", Consolas, monospace',
-    fontSize: 13.5, lineHeight: 1.2, fontWeight: 400, fontWeightBold: 650,
+    fontSize: 13.5, lineHeight: 1.1, fontWeight: 400, fontWeightBold: 650,
     // 120x32 es el tamaño con que main abre cada sesión (abrirAlMedir): oculta no mide, y con el 80x24 de xterm la pantalla
     // de Claude se dibujaba en una grilla distinta a la de su PTY y dejaba restos al ajustarse.
     cols: previo[0] || 120, rows: previo[1] || 32, cursorBlink: true, scrollback: 10000, theme: TEMA

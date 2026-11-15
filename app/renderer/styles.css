@@ -288,6 +288,8 @@ kbd { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; b
 .ventana.apagada { opacity: 0.72; }
 .ventana.foco { border-color: var(--brasa); }
 .ventana.recibe { box-shadow: 0 0 0 3px rgba(var(--capa-rgb), 0.35), 0 18px 50px -24px rgba(var(--sombra-rgb), var(--sombra-alfa)); }
+/* Con una ventana agrandada, del título de la pestaña solo asomaba un trozo por el borde (14-11-2026). */
+body:has(#capa-max > .ventana.max) #titulo-espacio { visibility: hidden; }
 .ventana.max { position: absolute; inset: 12px 12px 112px 76px; width: auto !important; height: auto !important; left: 76px !important; top: 12px !important; z-index: 8; }
 .capa-max { position: absolute; inset: 0; pointer-events: none; z-index: 8; }
 .capa-max > .ventana { pointer-events: auto; }
@@ -310,6 +312,8 @@ kbd { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; b
    terminal salía con 1 fila y 2 columnas de más, la última fila cortada abajo (03-11-2026). */
 .term-host { position: absolute; inset: 0; padding: 8px 4px 6px 10px; box-sizing: content-box; }
 .term-host .xterm { height: 100%; }
+/* xterm 6 deja su fondo de desplazamiento en negro puro: bajo la última fila quedaba una franja (14-11-2026). */
+.term-host .xterm .xterm-viewport { background-color: var(--terminal); }
 .xterm-viewport::-webkit-scrollbar { width: 9px; }
 .xterm-viewport::-webkit-scrollbar-thumb { background: rgba(var(--capa-rgb), 0.12); border-radius: 9px; border: 2px solid var(--terminal); }
 :is(.kb-tablero, .vista-flujo, .el-lista, .el-md)::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -363,7 +367,9 @@ body.arrastrando-ui .xterm { pointer-events: none; }
 .clawd { position: absolute; left: 14px; top: -41px; width: 72px; height: 40px; z-index: 4; pointer-events: none; }
 .clawd-svg { position: absolute; left: 0; bottom: 0; width: 72px; height: 40px; overflow: visible; }
 /* Maximizada no queda lugar sobre la barra: el Clawd baja a la esquina de la terminal. */
-.ventana.max .clawd { top: 56px; left: auto; right: 40px; }
+/* Con la ventana agrandada la mascota va en la barra, antes del nombre: sobre la terminal tapaba texto (14-11-2026). */
+.ventana.max .clawd { left: 12px; top: 7px; right: auto; transform: scale(0.6); transform-origin: top left; }
+.ventana.max .v-barra { padding-left: 76px; }
 .c-cuerpo, .c-brazos, .c-brazosArriba, .c-patasA, .c-patasB { fill: #d97757; }
 .c-ojos { fill: #1d0b03; }
 .c-brazosArriba { display: none; }
