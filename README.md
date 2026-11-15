@@ -8,6 +8,8 @@ App de escritorio para Windows que abre varias sesiones de [Claude Code](https:/
 terminales reales, las agrupa en espacios sobre un lienzo y te avisa cuál te necesita. Suma flujos (recetas YAML con
 etapas y puertas que apruebas tú), un CRM básico y una segunda opinión con asesores que se confrontan.
 
+**Página del proyecto, con el video de presentación:** https://camiloalonsomerino-spec.github.io/chocosys/
+
 Proyecto sin fines comerciales, solo recreativo. Repositorio sin fines de lucro. Licencia
 [PolyForm Noncommercial 1.0.0](LICENSE): **no es «open source» según la OSI** (detalle en [AVISO.md](AVISO.md)).
 
