@@ -12,6 +12,7 @@ const igual = (a, b, m) => { assert.deepStrictEqual(a, b, m); pasan++; };
 igual(plan.actual(undefined).tipo, 'libre', 'sin plan');
 igual(plan.actual('pro').tipo, 'libre', 'un texto no es un plan');
 igual(plan.actual({ tipo: 'gratis' }).sesiones, 0, 'tipo desconocido = sin tope');
+igual([plan.actual({ tipo: 'constructor' }).tipo, plan.actual({ tipo: '__proto__' }).tipo, plan.paraGuardar({ tipo: 'toString' }).tipo], ['libre', 'libre', 'libre'], 'nombres heredados de Object no son planes');
 
 // Pro de fábrica y con el tope subido a conciencia.
 const pro = plan.actual({ tipo: 'pro' });

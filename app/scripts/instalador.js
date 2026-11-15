@@ -36,7 +36,8 @@ const FUERA = /^(scripts|build|dist)([\\/]|$)|(^|[\\/])(node_modules|_archivo)([
 const DATOS_PROPIOS = carpetaDatos();
 function nombresPropios() {
   const archivo = path.join(DATOS_PROPIOS, 'perfil.json');
-  if (!fs.existsSync(archivo)) return [];
+  // Sin perfil.json (en GitHub Actions nunca hay) se revisan rutas y correos, pero no nombres: se dice, no se calla.
+  if (!fs.existsSync(archivo)) { console.warn(`Sin ${archivo}: la revisión no busca nombres propios, solo rutas y correos.`); return []; }
   try {
     // Cada nombre es texto literal: «S.A. (Chile» no es una expresión válida y antes vaciaba la revisión entera.
     return (JSON.parse(fs.readFileSync(archivo, 'utf8')).revision_publica || []).map((n) => new RegExp(String(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
@@ -46,7 +47,8 @@ function nombresPropios() {
     process.exit(1);
   }
 }
-const PROHIBIDO = [/[A-Z]:\\\\?Users\\\\?[^\\'"\s%<]/i, /[\w.+-]+@(?!ejemplo\.)[\w-]+\.[a-z]{2,}/i].concat(nombresPropios());
+// También rutas de Mac y Linux (/Users/<nombre>/ y /home/<nombre>/), para la edición que se arma en un Mac.
+const PROHIBIDO = [/[A-Z]:\\\\?Users\\\\?[^\\'"\s%<]/i, /\/(Users|home)\/[^/\s'"$<{]+\//, /[\w.+-]+@(?!ejemplo\.)[\w-]+\.[a-z]{2,}/i].concat(nombresPropios());
 // Los únicos archivos con datos del autor a propósito: su contacto público y el texto de los créditos.
 const DEL_AUTOR = /^config[\\/](contacto\.json|creditos\.md)$/;
 // Lo que no se copia a la foto: node_modules va por junction (pesa y nadie lo edita), el resto no viaja.
@@ -241,7 +243,8 @@ if (MIO) {
   config.dmg = Object.assign({}, base.dmg, { artifactName: 'Chocosys-propio-${version}-${arch}.dmg' });
 }
 // Firma ad-hoc: sin ella macOS da por dañada una app arm64 cuya firma de Electron quedó rota al armarla.
-if (MAC && process.argv.includes('--adhoc')) config.mac = Object.assign({}, base.mac, { identity: '-' });
+// Solo la ad-hoc lleva disable-library-validation (entitlements.adhoc.plist); la de desarrollador no lo necesita.
+if (MAC && process.argv.includes('--adhoc')) config.mac = Object.assign({}, base.mac, { identity: '-', entitlements: 'build/entitlements.adhoc.plist', entitlementsInherit: 'build/entitlements.adhoc.plist' });
 // Por la línea de comandos no toma la configuración entera: va en un archivo aparte.
 const archivoConfig = path.join(os.tmpdir(), MIO ? 'chocosys-config-propia.json' : 'chocosys-config-publica.json');
 fs.writeFileSync(archivoConfig, JSON.stringify(config, null, 2), 'utf8');

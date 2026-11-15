@@ -1,7 +1,7 @@
 {
   "name": "consola-agentes",
   "productName": "Chocosys",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Varias sesiones de Claude Code en terminales reales, con la bandeja de lo que te necesita.",
   "main": "main.js",
   "private": true,

@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Chocosys en macOS con Hardened Runtime: lo mínimo que Electron necesita (JIT de V8) y cargar el binario de node-pty
-     aunque la firma sea ad-hoc (sin cuenta de desarrollador de Apple). -->
+<!-- Chocosys en macOS con Hardened Runtime y firma de desarrollador: lo que Electron necesita para el JIT de V8. -->
 <plist version="1.0">
 <dict>
   <key>com.apple.security.cs.allow-jit</key>
   <true/>
   <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-  <true/>
-  <key>com.apple.security.cs.disable-library-validation</key>
   <true/>
 </dict>
 </plist>

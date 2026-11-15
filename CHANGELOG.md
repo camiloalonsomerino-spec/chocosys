@@ -5,7 +5,7 @@
 Las fechas van en formato DD-MM-AAAA. Este repositorio parte con un solo commit (13-11-2026); lo anterior viene del
 historial de desarrollo y de las fichas de actualización, contado sin datos de nadie.
 
-## Sin publicar (rama `mac-y-planes`, 15-11-2026)
+## 0.23.0 · 15-11-2026
 
 - **Mi plan:** al primer inicio (y en ☰ › Mi plan) se elige la suscripción de Claude Code: Pro, Max 5x, Max 20x, API o
   sin límites. Cada plan fija cuántas sesiones trabajan a la vez, el modelo y esfuerzo de una sesión nueva, el modelo y
@@ -16,7 +16,15 @@ historial de desarrollo y de las fichas de actualización, contado sin datos de 
 - **macOS (sin probar en un Mac):** capa de plataforma (`plataforma.js`) para buscar programas, el PATH del shell de
   login, el tubo de terminales como socket Unix, la barra con los semáforos y los atajos con Cmd; lector de procesos con
   `ps` e `ioreg` (`procesos-unix.js`, mismas órdenes que el PowerShell); `.dmg` con `npm run instalador -- --mac` en un
-  Mac o con `.github/workflows/mac.yml`. Windows queda igual. Prueba: `scripts/probar-unix.js`.
+  Mac o con `.github/workflows/mac.yml`. Windows queda igual. Prueba: `scripts/probar-unix.js`. Guía: `docs/mac.md`.
+- **Seguridad:** el socket de las terminales nace solo para su dueño (0600); del PATH se aceptan solo carpetas
+  absolutas; un flujo pedido por el MCP respeta el tope del plan; las acciones del flujo de GitHub van fijadas por hash.
+  Tras una revisión independiente: fuera de Windows y macOS el socket va en `XDG_RUNTIME_DIR` (no en `/tmp`); un plan
+  llamado «constructor» o «__proto__» ya no salta los topes; la revisión pública del instalador también busca rutas
+  `/Users/…` y `/home/…`; `disable-library-validation` va solo en la firma ad-hoc. Nuevo `SECURITY.md` (reporte privado).
+  **Pendiente (media):** el dueño de las terminales corre con `ELECTRON_RUN_AS_NODE`, así que el binario firmado acepta
+  ese modo; en macOS otro programa del mismo usuario podría usar los permisos de privacidad que se le dieron a Chocosys.
+  El arreglo (apagar el fusible `RunAsNode`) cambia cómo parte ese proceso y se hará cuando se pueda probar en un Mac.
 
 ## 0.22.0 · 15-11-2026
 

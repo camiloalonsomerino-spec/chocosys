@@ -40,7 +40,8 @@ const VALIDA = {
 // El plan vigente: los valores de fábrica de su tipo, con encima los que quien usa la app cambió y son válidos.
 function actual(guardado) {
   const g = guardado && typeof guardado === 'object' ? guardado : {};
-  const tipo = PLANES[g.tipo] ? g.tipo : 'libre';
+  // hasOwn: «constructor» o «__proto__» no son planes aunque PLANES los «tenga».
+  const tipo = Object.hasOwn(PLANES, String(g.tipo)) ? g.tipo : 'libre';
   const p = Object.assign({ tipo }, PLANES[tipo]);
   for (const k of Object.keys(VALIDA)) if (g[k] !== undefined && VALIDA[k](g[k])) p[k] = g[k];
   return p;
@@ -48,7 +49,7 @@ function actual(guardado) {
 
 // Lo que se guarda: solo el tipo y lo que difiere de su fábrica (así un cambio de fábrica en otra versión le llega).
 function paraGuardar(d) {
-  const tipo = PLANES[d && d.tipo] ? d.tipo : 'libre';
+  const tipo = d && Object.hasOwn(PLANES, String(d.tipo)) ? d.tipo : 'libre';
   const r = { tipo };
   for (const k of Object.keys(VALIDA)) if (d[k] !== undefined && VALIDA[k](d[k]) && d[k] !== PLANES[tipo][k]) r[k] = d[k];
   return r;

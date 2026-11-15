@@ -58,7 +58,10 @@ function cargarPathDelShell() {
 // (en la carpeta temporal del usuario: la ruta de un socket no puede pasar de 104 caracteres).
 function tuboTerminales(datos) {
   const h = crypto.createHash('sha1').update(datos.toLowerCase()).digest('hex').slice(0, 12);
-  return esWin ? '\\\\.\\pipe\\chocosys-terminales-' + h : path.join(os.tmpdir(), 'chocosys-' + h + '.sock');
+  if (esWin) return '\\\\.\\pipe\\chocosys-terminales-' + h;
+  // En macOS la carpeta temporal es del usuario (modo 700); en Linux /tmp es de todos y otro usuario podría crear antes un
+  // socket con este nombre: ahí va en XDG_RUNTIME_DIR o en la carpeta de datos.
+  return path.join(esMac ? os.tmpdir() : (process.env.XDG_RUNTIME_DIR || datos), 'chocosys-' + h + '.sock');
 }
 
 // Si la consola anterior se cerró a la fuerza, sus claude siguen vivos sin ventana. Se reconocen por el archivo de hooks de

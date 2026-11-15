@@ -4,7 +4,7 @@
 
 # Chocosys
 
-App de escritorio para Windows que abre varias sesiones de [Claude Code](https://docs.anthropic.com/claude-code) en
+App de escritorio para Windows (y macOS, en prueba) que abre varias sesiones de [Claude Code](https://docs.anthropic.com/claude-code) en
 terminales reales, las agrupa en espacios sobre un lienzo y te avisa cuál te necesita. Suma flujos (recetas YAML con
 etapas y puertas que apruebas tú), un CRM básico y una segunda opinión con asesores que se confrontan.
 
@@ -15,7 +15,8 @@ Proyecto sin fines comerciales, solo recreativo. Repositorio sin fines de lucro.
 
 ## Qué necesitas
 
-- Windows 10 u 11.
+- Windows 10 u 11. **macOS, en prueba** desde la 0.23.0: el código está, pero todavía no se ha probado en un Mac real
+  ([guía y estado](docs/mac.md)).
 - [Node.js](https://nodejs.org) 20 o más nuevo.
 - Claude Code instalado y con tu sesión iniciada (`claude` tiene que abrir en una terminal).
 
@@ -28,7 +29,8 @@ npm start
 ```
 
 Para armar tu propio instalador (`.exe`): `npm run instalador`. Antes de armar, revisa que el paquete no lleve rutas de
-un computador ni correos; `npm run instalador -- --revisar` hace solo esa revisión.
+un computador ni correos; `npm run instalador -- --revisar` hace solo esa revisión. El `.dmg` de macOS se arma en un
+Mac con `npm run instalador -- --mac --adhoc`, o en GitHub con el flujo [Instalador de macOS](.github/workflows/mac.yml).
 
 Las ediciones livianas se abren igual, desde su carpeta y con las dependencias de `app/` ya instaladas:
 `cd lite/terminales` (o `lite/flujos`) y `npm start`. Detalle en [lite/LEEME.md](lite/LEEME.md).
@@ -49,8 +51,20 @@ hooks y otro candado de instancia).
 | Recursos del PC | CPU, RAM y GPU, y qué sesión consume qué |
 | MCP `chocosys` | Una sesión puede leer el estado, abrir otras y lanzar flujos (aprobar puertas, no) |
 | Fuentes | Títulos, interfaz y terminal con otra fuente, desde un archivo ([guía](docs/fuentes.md)) |
+| Mi plan | Tu suscripción de Claude (Pro, Max o API) fija cuántas sesiones trabajan a la vez y con qué modelo |
 
-Los atajos de la app llevan `Shift` porque `Ctrl+N`, `Ctrl+L` y `Ctrl+R` son de Claude Code.
+Los atajos de la app llevan `Shift` porque `Ctrl+N`, `Ctrl+L` y `Ctrl+R` son de Claude Code. En macOS van con `Cmd`.
+
+## Lo nuevo en la 0.23.0
+
+- **Mi plan.** Al primer inicio (y en ☰ › Mi plan) eliges tu suscripción de Claude Code: Pro, Max 5x, Max 20x, API o sin
+  límites. Todas las sesiones gastan del mismo límite de uso, así que el plan fija cuántas trabajan a la vez, el modelo
+  y el esfuerzo de una sesión nueva, lo máximo que puede pedir una sesión o un flujo (en Pro, una etapa que pide Opus
+  corre en Sonnet), los agentes por etapa, las tareas programadas y si se usa la Segunda opinión. Cada valor se puede
+  subir a conciencia: el diálogo dice qué quedó sobre lo de fábrica, y pasar el tope desde la ventana pregunta antes.
+  Los valores de fábrica son de Chocosys, no cifras de Anthropic. Si no eliges, todo sigue como antes.
+- **macOS, en prueba.** La app ahora separa lo que cambia entre sistemas en una capa propia; Windows funciona igual que
+  antes. El estado, lo que falta probar y cómo instalarla: [docs/mac.md](docs/mac.md).
 
 ## Lo nuevo en la 0.22.0
 
@@ -95,7 +109,8 @@ Lo que mandes se usa solo para arreglar el fallo y se borra cuando el arreglo sa
 
 El autor **no abre enlaces, archivos ZIP, ejecutables ni adjuntos de terceros**. Por eso todo pasa por el repositorio:
 issues y pull requests con texto y capturas. Las contribuciones se leen como texto y código en GitHub; nada se ejecuta
-antes de leerlo. Detalle en [CONTRIBUTING.md](CONTRIBUTING.md).
+antes de leerlo. Detalle en [CONTRIBUTING.md](CONTRIBUTING.md). Una vulnerabilidad se reporta en privado, no como
+issue: [SECURITY.md](SECURITY.md).
 
 ## Apoyar el proyecto
 
