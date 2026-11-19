@@ -12,8 +12,11 @@ function tachar(texto, quien = {}) {
   let t = String(texto)
     // Rutas de Windows y de Git Bash enteras: el nombre de una carpeta también puede nombrar a un cliente.
     // Tras un espacio la ruta sigue si la palabra siguiente trae otro separador («Cliente Uno\x.md»).
-    .replace(/[A-Za-z]:[\\/](?:[^\s"'<>|*?]|\s(?=[^\s"'<>|]*[\\/]))*/g, '<ruta>')
+    // La unidad no va pegada a otra letra: si no, el «s:/» de «https://» se tomaba por ruta y la URL se perdía.
+    .replace(/(?<![A-Za-z])[A-Za-z]:[\\/](?:[^\s"'<>|*?]|\s(?=[^\s"'<>|]*[\\/]))*/g, '<ruta>')
     .replace(/(^|[\s"'(=])\/[a-z]\/(?:[^\s"'<>|]|\s(?=[^\s"'<>|]*\/))*/gim, '$1<ruta>')
+    // macOS y Linux (17-11-2026): las carpetas de usuario, volúmenes y temporales, enteras y con la misma regla de espacios.
+    .replace(/(^|[\s"'(=])(?:\/(?:Users|home|Volumes|private|var\/folders)\/|~\/)(?:[^\s"'<>|]|\s(?=[^\s"'<>|]*\/))*/gm, '$1<ruta>')
     .replace(/\\\\[^\s"'<>|]+/g, '<ruta>')
     .replace(/%[A-Z]+%[\\/][^\s"'<>|]*/gi, '<ruta>')
     .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '<correo>')
@@ -42,7 +45,7 @@ function armar(d) {
     `# Reporte de fallo · Chocosys ${d.version}`,
     '',
     `- Fecha: ${hoy()}`,
-    `- Versión: Chocosys ${d.version} · Electron ${d.electron} · Windows ${d.windows}`,
+    `- Versión: Chocosys ${d.version} · Electron ${d.electron} · ${d.sistema || 'Windows ' + d.windows}`,
     `- Capturas: ${d.capturas ? d.capturas + ' (captura-1.png)' : 'ninguna'}`,
     '',
     bloque('Qué pasó', d.paso),

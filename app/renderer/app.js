@@ -12,6 +12,10 @@ document.documentElement.dataset.edicion = EDICION;
 // macOS (15-11-2026): los atajos de la app van con Cmd en vez de Ctrl; Ctrl sigue siendo de Claude Code.
 const MAC = new URLSearchParams(location.search).get('plataforma') === 'darwin';
 document.documentElement.dataset.plataforma = MAC ? 'mac' : 'win';
+// macOS (17-11-2026): las etiquetas de atajos decían «Ctrl Shift K» aunque en Mac es Cmd. Ctrl+Shift y Ctrl+Enter pasan a
+// Cmd; Ctrl+Tab y Ctrl + rueda siguen con Ctrl, que es como funcionan también en macOS.
+const etiquetaAtajo = (t) => (MAC ? String(t).replace(/\bCtrl([ +])(Shift|Enter)\b/g, 'Cmd$1$2') : t);
+if (MAC) document.querySelectorAll('kbd').forEach((k) => { k.textContent = etiquetaAtajo(k.textContent); });
 const VISTAS_EDICION = { terminales: ['lienzo', 'bandeja'], flujos: ['lienzo', 'bandeja', 'flujo'] }[EDICION];
 const ORDEN = ['necesita', 'termino', 'trabajando', 'pausa'];
 const ETIQUETA = { necesita: 'TE NECESITA', termino: 'TERMINÓ', trabajando: 'TRABAJANDO', pausa: 'EN PAUSA', espera: 'EN ESPERA', listo: 'TERMINÓ' };
@@ -174,11 +178,15 @@ function terminal(id) {
   term.attachCustomKeyEventHandler((ev) => {
     if (ev.type !== 'keydown') return true;
     const tecla = ev.key.toLowerCase();
-    if (ev.ctrlKey && !ev.shiftKey && tecla === 'c' && term.hasSelection()) { api.copiar(term.getSelection()); term.clearSelection(); return false; }
-    if (ev.ctrlKey && !ev.shiftKey && tecla === 'v') return false;
+    // Ctrl+C con selección copia y Ctrl+V lo pega el navegador: convención de Windows. En macOS se copia y pega con Cmd
+    // (menú Edición), Ctrl+C siempre interrumpe y Ctrl+V es como Claude Code pega una imagen: le llegan los dos.
+    if (!MAC && ev.ctrlKey && !ev.shiftKey && tecla === 'c' && term.hasSelection()) { api.copiar(term.getSelection()); term.clearSelection(); return false; }
+    if (!MAC && ev.ctrlKey && !ev.shiftKey && tecla === 'v') return false;
     // Ctrl+Shift+← y → cambian de pestaña: no le llegan a Claude Code.
     if (ev.ctrlKey && ev.shiftKey && (tecla === 'arrowleft' || tecla === 'arrowright' || tecla === 'tab')) return false;
-    if (ev.altKey && !ev.ctrlKey && /^Digit[1-9]$/.test(ev.code)) return false;
+    // La pestaña N: Alt+N en Windows, Cmd+N en macOS (Option+número escribe |, @, #… y tiene que llegar a la terminal).
+    // En Windows, Alt+Shift+N también se descarta, como en la 0.23.0.
+    if (/^Digit[1-9]$/.test(ev.code) && (MAC ? !ev.shiftKey && ev.metaKey && !ev.ctrlKey && !ev.altKey : ev.altKey && !ev.ctrlKey)) return false;
     return true;
   });
   term.onData((datos) => api.escribir(id, datos));
@@ -1750,7 +1758,7 @@ const PISTAS = [
   'Ctrl+Tab te lleva a lo siguiente que te necesita: primero las puertas.',
   'Alt + arrastrar mueve una ventana desde cualquier parte.',
   'Ctrl + rueda acerca o aleja el lienzo; «Ajustar» encuadra todo.',
-  'Ctrl+Shift+M agranda la ventana elegida; otra vez la achica.',
+  etiquetaAtajo('Ctrl+Shift+M agranda la ventana elegida; otra vez la achica.'),
   'Un flujo terminado se quita con el botón junto a su nombre.',
   'A varias a la vez: @alfa @beta: orden. A todas las de esta pestaña: @todas: orden.',
   '@#Ventas: orden le escribe a todas las sesiones de la pestaña Ventas.',
@@ -2616,7 +2624,7 @@ function restaurarAprobar() {
   // En la puerta crítica Ctrl+Enter no aprueba, así que no se muestra.
   const f = esPuerta(sel) && flujo(sel.slice(2));
   const critica = f && f.items[f.actual] && f.items[f.actual].critica;
-  boton.replaceChildren(textoAprobar, critica ? null : h('kbd', {}, 'Ctrl Enter'));
+  boton.replaceChildren(textoAprobar, critica ? null : h('kbd', {}, etiquetaAtajo('Ctrl Enter')));
 }
 let pidiendoCambios = false;
 function pedirCambios() {
@@ -2978,8 +2986,8 @@ document.addEventListener('keydown', (e) => {
   // Ctrl+Shift+Tab: la pestaña anterior (y otra vez, de vuelta). Va antes de Ctrl+Tab, que la incluiría.
   else if (e.ctrlKey && e.shiftKey && e.key === 'Tab') { pasarAPestana(espacioPrevio); hecho = true; }
   else if (e.ctrlKey && e.key === 'Tab') { siguiente(); hecho = true; }
-  // Alt+1 a Alt+9: directo a esa pestaña.
-  else if (e.altKey && !e.ctrlKey && !e.shiftKey && /^Digit[1-9]$/.test(e.code)) { pasarAPestana((espacios[Number(e.code.slice(5)) - 1] || {}).id); hecho = true; }
+  // Alt+1 a Alt+9 (Cmd+1 a Cmd+9 en macOS): directo a esa pestaña. En macOS, Option+número no se toca: escribe caracteres.
+  else if (/^Digit[1-9]$/.test(e.code) && !e.shiftKey && (MAC ? e.metaKey && !e.ctrlKey && !e.altKey : e.altKey && !e.ctrlKey)) { pasarAPestana((espacios[Number(e.code.slice(5)) - 1] || {}).id); hecho = true; }
   else if (mod && e.shiftKey && tecla === 'n') { menuCrear('sesion'); hecho = true; }
   else if (mod && e.shiftKey && tecla === 'l') { abrirLanzador(); hecho = true; }
   // Con Shift, como los demás: Ctrl+K sin Shift borra hasta el final de la línea en Claude Code.

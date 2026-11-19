@@ -54,6 +54,22 @@ function cargarPathDelShell() {
   } catch (e) { return ''; }
 }
 
+// Abierta desde el Finder o el Dock, la app no trae LANG (17-11-2026: en las sesiones solo llegaba LC_CTYPE=UTF-8), y
+// Claude Code y las herramientas de la sesión quedan sin idioma. Se completa desde el idioma del sistema
+// (app.getSystemLocale(), «es-CL») con una variante que exista en este Mac: es_CL.UTF-8 no está en macOS 13 y sí
+// es_ES.UTF-8; sin ninguna de la lengua, en_US.UTF-8. Si LANG ya viene (abierta desde la Terminal), no se toca.
+function completarIdioma(idiomaSistema, carpeta = '/usr/share/locale') {
+  if (esWin || process.env.LANG) return process.env.LANG || '';
+  const [lengua, region] = String(idiomaSistema || '').split(/[-_]/);
+  let hay = [];
+  try { hay = fs.readdirSync(carpeta).filter((n) => n.endsWith('.UTF-8')); } catch (e) { /* sin la carpeta */ }
+  const deLengua = /^[a-z]{2,3}$/i.test(lengua || '') ? hay.filter((n) => n.startsWith(lengua.toLowerCase() + '_')).sort() : [];
+  const exacta = lengua && region ? `${lengua.toLowerCase()}_${region.toUpperCase()}.UTF-8` : '';
+  const elegido = (exacta && hay.includes(exacta) ? exacta : '') || deLengua[0] || 'en_US.UTF-8';
+  process.env.LANG = elegido;
+  return elegido;
+}
+
 // El tubo entre la consola y el dueño de las terminales: una tubería con nombre en Windows, un socket Unix en macOS
 // (en la carpeta temporal del usuario: la ruta de un socket no puede pasar de 104 caracteres).
 function tuboTerminales(datos) {
@@ -100,4 +116,4 @@ const conModificador = (input) => (esMac ? input.meta : input.control);
 // Dónde guardan sus datos las apps del usuario (Obsidian, por ejemplo): %APPDATA% o ~/Library/Application Support.
 const datosDeApps = () => process.env.APPDATA || (esMac ? path.join(os.homedir(), 'Library', 'Application Support') : path.join(os.homedir(), '.config'));
 
-module.exports = { esWin, esMac, buscar, cargarPathDelShell, tuboTerminales, cerrarHuerfanas, opcionesVentana, conModificador, datosDeApps };
+module.exports = { esWin, esMac, buscar, cargarPathDelShell, completarIdioma, tuboTerminales, cerrarHuerfanas, opcionesVentana, conModificador, datosDeApps };

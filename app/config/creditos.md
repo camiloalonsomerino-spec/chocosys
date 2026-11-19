@@ -13,7 +13,7 @@ Para ordenar ese trabajo. Chocosys abre cada sesión en una terminal real, agrup
 # Qué se ha hecho
 
 - Terminales reales de Claude Code, organizadas por espacios en un lienzo.
-- Estados en vivo (trabajando, terminó, te necesita), con aviso de Windows.
+- Estados en vivo (trabajando, terminó, te necesita), con aviso del sistema (Windows o macOS).
 - Flujos: recetas con etapas en paralelo y puertas que solo una persona puede aprobar.
 - Una sesión central que reparte el trabajo, y una barra de comando para ordenarles cosas.
 - Monitor de recursos del equipo (CPU, memoria y GPU).

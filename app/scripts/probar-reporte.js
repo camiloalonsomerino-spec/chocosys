@@ -29,4 +29,23 @@ assert(tachar('ana abrió mañana el Ánade de ana.', { usuario: 'ana', equipo: 
 const r = armar({ version: '0.20.0', electron: '44.9.0', windows: '10.0', capturas: 1, paso: 'se cerró; escríbeme a a@b.cl', esperaba: 'que abra', pasos: '1. abrir', registro: 'error en D:\\x\\y', quien });
 for (const t of ['# Reporte de fallo · Chocosys 0.20.0', '## Qué pasó', '## Qué esperabas', '## Pasos para repetirlo', '## Registro']) assert(r.includes(t), `falta «${t}»`);
 assert(!r.includes('a@b.cl') && !r.includes('D:\\x'));
-console.log('Tachado del reporte: 6 de 6 pruebas pasan.');
+// macOS y Linux: rutas enteras (17-11-2026; antes quedaba «/Users/<usuario>/Documents/Cliente Uno/obra.md»).
+const mac = tachar([
+  'abrí /Users/ana/Documents/Cliente Uno/obra.md y falló',
+  'en linux: /home/ana/proyectos/Obra Norte/plano.pdf; listo',
+  'pendrive "/Volumes/Disco Cliente/respaldo.zip"',
+  'socket en /private/var/folders/xy/abc123/T/chocosys-1.sock',
+  'temporal /var/folders/xy/abc123/T/foto',
+  'corto: ~/Mis Clientes/Obra Sur/a.md'
+].join('\n'), { usuario: 'ana', equipo: 'MAC-X' });
+for (const fuga of ['Documents', 'Cliente Uno', 'Uno', 'proyectos', 'Norte', 'Disco Cliente', 'respaldo', 'abc123', 'Mis Clientes', 'Sur', 'obra.md']) {
+  assert(!mac.includes(fuga), `se filtró «${fuga}» (macOS):\n${mac}`);
+}
+assert(mac.startsWith('abrí <ruta> y falló') && mac.includes('pendrive "<ruta>"'), mac);
+// Una barra suelta en prosa no es ruta: «y/o» y «1/2» quedan.
+assert(tachar('usa y/o la mitad 1/2', quien) === 'usa y/o la mitad 1/2');
+const rm = armar({ version: '0.23.1', electron: '44.9.0', sistema: 'macOS 15.1', paso: 'x', quien });
+assert(rm.includes('· macOS 15.1') && !rm.includes('Windows'), 'la versión de macOS no dice macOS');
+// Una URL no es ruta de Windows (18-11-2026; antes quedaba «http<ruta>»), y la ruta de al lado se sigue tachando.
+assert(tachar('mira https://claude.ai/x y C:\\a\\b.md', quien) === 'mira https://claude.ai/x y <ruta>', tachar('mira https://claude.ai/x y C:\\a\\b.md', quien));
+console.log('Tachado del reporte: 10 de 10 pruebas pasan.');

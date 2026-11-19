@@ -1,7 +1,8 @@
 // Chocosys · proyecto sin fines comerciales, solo recreativo · repositorio sin fines de lucro · licencia PolyForm Noncommercial 1.0.0 (ver AVISO.md)
 'use strict';
 
-// Dueño de las terminales de Chocosys. Corre aparte de la ventana (electron.exe con ELECTRON_RUN_AS_NODE) para que
+// Dueño de las terminales de Chocosys. Corre aparte de la ventana (electron.exe con ELECTRON_RUN_AS_NODE en Windows; el
+// node del sistema en macOS, donde el armado apaga ese fusible) para que
 // cerrar o reiniciar Chocosys no corte a las sesiones: al volver, la consola se conecta de nuevo y las encuentra vivas.
 // Idea del demonio orcad de Orca (MIT, stablyai/orca), en chico. Habla por un tubo con mensajes JSON, uno por línea.
 // Sin consola conectada por ESPERA_MS, cierra todo y se va. Si se cae, Windows cierra sus hijos (trabajo-windows.ps1).

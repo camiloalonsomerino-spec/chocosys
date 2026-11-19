@@ -5,6 +5,32 @@
 Las fechas van en formato DD-MM-AAAA. Este repositorio parte con un solo commit (13-11-2026); lo anterior viene del
 historial de desarrollo y de las fichas de actualización, contado sin datos de nadie.
 
+## 0.23.1 · 18-11-2026
+
+Probada en un Mac real el 17-11-2026 (macOS 13.1, Apple M1) y en Windows 11 el 18-11-2026 (`npm run probar` y la
+revisión pública).
+
+- **macOS:** la app armada abre sesiones (node-pty armaba la ruta de `spawn-helper` como «app.asar.unpacked.unpacked»;
+  la arregla un afterPack del armado, que falla si node-pty cambia esa línea).
+- **macOS:** la pestaña N va con Cmd+1 a 9; Option+número escribe su carácter (|, @, #…) en la terminal y en la barra.
+  Windows sigue con Alt+1 a 9.
+- **macOS:** Ctrl+C siempre interrumpe y Ctrl+V le llega a Claude Code (pegar una imagen); copiar y pegar va con Cmd.
+- **macOS:** el dueño de las terminales corre con el `node` del sistema y el armado apaga los fusibles RunAsNode,
+  `--inspect` y `NODE_OPTIONS`. Sin Node.js, cada sesión lo avisa en su terminal y se cierra.
+- **macOS:** con la app bajada y ya aprobada, las sesiones abren: Chocosys le quita la cuarentena a su propia carpeta
+  `app.asar.unpacked` para que el `node` del sistema cargue node-pty.
+- **macOS:** abierta desde el Dock, las sesiones reciben `LANG` desde el idioma del sistema (la variante que exista:
+  `es_CL` no está en macOS 13 y se usa `es_ES`).
+- **macOS:** la RAM de la pastilla sale de `vm_stat` (activas + fijas + comprimidas); antes marcaba 97-99 % con la
+  máquina holgada.
+- **macOS:** las etiquetas de atajos dicen Cmd (Cmd Shift K, Cmd Enter…) y los créditos dicen «aviso del sistema
+  (Windows o macOS)».
+- **Reporte de fallos:** tacha enteras las rutas de `/Users`, `/home`, `/Volumes`, `/private`, `/var/folders` y `~/`
+  (también en un reporte hecho en Windows) y, en macOS, la línea de versión dice macOS. Una URL (`https://…`) ya no
+  se toma por ruta de Windows (quedaba «http<ruta>»). Prueba: `scripts/probar-reporte.js` pasa de 6 a 10.
+- **macOS y Linux:** sin Node.js, el aviso en la terminal nombra los dos sistemas (antes decía solo macOS).
+- **Seguridad:** cerrado el pendiente de la 0.23.0 en macOS (fusible RunAsNode apagado). En Windows queda igual.
+
 ## 0.23.0 · 15-11-2026
 
 - **Mi plan:** al primer inicio (y en ☰ › Mi plan) se elige la suscripción de Claude Code: Pro, Max 5x, Max 20x, API o

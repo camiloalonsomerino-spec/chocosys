@@ -17,7 +17,8 @@ responde en el mismo reporte y, si se confirma, el arreglo sale en una versión 
 
 ## Qué versiones reciben arreglos
 
-Solo la última publicada en `main`. La versión para macOS está en prueba (ver [docs/mac.md](docs/mac.md)).
+Solo la última publicada en `main`. La versión para macOS está en prueba (probada en un Mac real desde la 0.23.1; ver
+[docs/mac.md](docs/mac.md)).
 
 ## Qué interesa especialmente
 
@@ -32,3 +33,9 @@ delicado:
 - Que un reporte de fallo **filtre datos** (rutas, correos, claves) que el tachado debía quitar.
 
 Fuera de alcance: lo que hace Claude Code por sí mismo y los servidores MCP de terceros que cada persona instala.
+
+## Arreglos de seguridad recientes
+
+- 0.23.1 (macOS): el binario firmado ya no acepta `ELECTRON_RUN_AS_NODE`, `--inspect` ni `NODE_OPTIONS` (fusibles
+  apagados en el armado), así que otro programa del usuario ya no puede correr código como Chocosys con sus permisos de
+  privacidad. En Windows sigue igual: el dueño de las terminales usa `ELECTRON_RUN_AS_NODE`.

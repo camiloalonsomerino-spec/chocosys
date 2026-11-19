@@ -245,6 +245,13 @@ if (MIO) {
 // Firma ad-hoc: sin ella macOS da por dañada una app arm64 cuya firma de Electron quedó rota al armarla.
 // Solo la ad-hoc lleva disable-library-validation (entitlements.adhoc.plist); la de desarrollador no lo necesita.
 if (MAC && process.argv.includes('--adhoc')) config.mac = Object.assign({}, base.mac, { identity: '-', entitlements: 'build/entitlements.adhoc.plist', entitlementsInherit: 'build/entitlements.adhoc.plist' });
+// macOS: arregla la ruta de spawn-helper de node-pty dentro de app.asar.unpacked (ver mac-despues-de-empaquetar.js).
+// Ruta absoluta: electron-builder corre desde la foto. Windows queda igual.
+if (MAC) config.afterPack = path.join(__dirname, 'mac-despues-de-empaquetar.js');
+// macOS: el binario firmado no corre como Node ni acepta --inspect o NODE_OPTIONS (otro programa del usuario podía correr
+// código como Chocosys con sus permisos de privacidad). El dueño de terminales usa el node del sistema (main.js,
+// lanzarTerminales). electron-builder aplica los fusibles antes de firmar.
+if (MAC) config.electronFuses = { runAsNode: false, enableNodeCliInspectArguments: false, enableNodeOptionsEnvironmentVariable: false };
 // Por la línea de comandos no toma la configuración entera: va en un archivo aparte.
 const archivoConfig = path.join(os.tmpdir(), MIO ? 'chocosys-config-propia.json' : 'chocosys-config-publica.json');
 fs.writeFileSync(archivoConfig, JSON.stringify(config, null, 2), 'utf8');

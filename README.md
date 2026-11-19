@@ -15,8 +15,8 @@ Proyecto sin fines comerciales, solo recreativo. Repositorio sin fines de lucro.
 
 ## Qué necesitas
 
-- Windows 10 u 11. **macOS, en prueba** desde la 0.23.0: el código está, pero todavía no se ha probado en un Mac real
-  ([guía y estado](docs/mac.md)).
+- Windows 10 u 11. **macOS, en prueba:** desde la 0.23.1 se probó en un Mac real (macOS 13.1, Apple M1); falta probar
+  el `.dmg` bajado de punta a punta y los Mac Intel ([guía y estado](docs/mac.md)).
 - [Node.js](https://nodejs.org) 20 o más nuevo.
 - Claude Code instalado y con tu sesión iniciada (`claude` tiene que abrir en una terminal).
 
@@ -54,6 +54,14 @@ hooks y otro candado de instancia).
 | Mi plan | Tu suscripción de Claude (Pro, Max o API) fija cuántas sesiones trabajan a la vez y con qué modelo |
 
 Los atajos de la app llevan `Shift` porque `Ctrl+N`, `Ctrl+L` y `Ctrl+R` son de Claude Code. En macOS van con `Cmd`.
+
+## Lo nuevo en la 0.23.1
+
+- **macOS probado en un Mac real.** La app armada abre sesiones, la pestaña N va con Cmd+1 a 9 (Option+número escribe
+  `|`, `@`, `#`…), Ctrl+C interrumpe y Ctrl+V pega una imagen en Claude Code, la RAM de la pastilla ya no marca 97 %
+  con la máquina holgada y el armado apaga el fusible RunAsNode. Necesita Node.js instalado. Detalle en
+  [CHANGELOG.md](CHANGELOG.md) y [docs/mac.md](docs/mac.md).
+- **Reporte de fallos.** Tacha también las rutas de macOS y Linux enteras, y deja de comerse las URL.
 
 ## Lo nuevo en la 0.23.0
 

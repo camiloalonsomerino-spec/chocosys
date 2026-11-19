@@ -109,6 +109,34 @@ process.kill = (pid) => { matados.push(pid); };
     igual(u.gpuDeIoreg(ioreg), [['Apple M1', 17, 734003200, 'integrada']], 'GPU de Apple Silicon');
     igual(u.gpuDeIoreg('nada'), null, 'sin GPU legible');
 
+    // RAM de macOS con vm_stat (17-11-2026): activas + fijas + comprimidas, por el tamaño de página que trae.
+    const { leerVmStat } = require('../recursos');
+    const vm = 'Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                                2837.\nPages active:                            100000.\nPages inactive:                          105103.\nPages wired down:                         50000.\nPages occupied by compressor:            50000.\n';
+    igual(leerVmStat(vm), Math.min(200000 * 16384, require('os').totalmem()), 'RAM usada desde vm_stat');
+    igual(leerVmStat('nada'), null, 'vm_stat ilegible');
+
+    // LANG desde el idioma del sistema (abierta desde el Dock). En Windows no hace nada.
+    if (process.platform !== 'win32') {
+      const fs = require('fs');
+      const path = require('path');
+      const { completarIdioma } = require('../plataforma');
+      const loc = fs.mkdtempSync(path.join(require('os').tmpdir(), 'probar-locale-'));
+      for (const n of ['en_US.UTF-8', 'es_ES.UTF-8', 'es_MX.UTF-8', 'es_ES']) fs.mkdirSync(path.join(loc, n));
+      const antes = process.env.LANG;
+      const con = (idioma) => { delete process.env.LANG; return completarIdioma(idioma, loc); };
+      try {
+        igual(con('es-MX'), 'es_MX.UTF-8', 'idioma y región exactos');
+        igual(con('es-CL'), 'es_ES.UTF-8', 'sin es_CL: la misma lengua en otra región');
+        igual(con('ja-JP'), 'en_US.UTF-8', 'sin la lengua: en_US');
+        igual(con(''), 'en_US.UTF-8', 'sin idioma del sistema');
+        process.env.LANG = 'fr_FR.UTF-8';
+        igual(completarIdioma('es-CL', loc), 'fr_FR.UTF-8', 'si LANG ya viene, no se toca');
+      } finally {
+        if (antes === undefined) delete process.env.LANG; else process.env.LANG = antes;
+        fs.rmSync(loc, { recursive: true, force: true });
+      }
+    }
+
     console.log(`probar-unix: ${pasan} de ${pasan} pasan`);
   } finally { process.kill = killOriginal; }
 })().catch((e) => { process.kill = killOriginal; console.error('FALLA:', e.message); process.exit(1); });

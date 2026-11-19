@@ -6,7 +6,35 @@
 // modo automático) salió el 04-11-2026: está en _archivo\limpieza-04-11-2026\.
 
 const os = require('os');
-const { spawn } = require('child_process');
+const { spawn, execFile, execFileSync } = require('child_process');
+
+// RAM usada. En macOS os.freemem() no cuenta la caché como libre y marcaba 97-99 % con la máquina holgada (17-11-2026,
+// memory_pressure decía 45 % libre): ahí se usa vm_stat, activas + fijas + comprimidas (como «Memoria usada» del Monitor de
+// Actividad), leída cada pocos segundos. En Windows y Linux, lo de siempre.
+const RAM_MAC_MS = 5000;
+let ramMac = null;             // { usada, t }
+let leyendoRam = false;
+function leerVmStat(salida) {
+  const pagina = Number((/page size of (\d+) bytes/.exec(salida) || [])[1]) || 4096;
+  const paginas = (nombre) => Number((new RegExp('^' + nombre + ':\\s+(\\d+)', 'm').exec(salida) || [])[1]) || 0;
+  const usada = (paginas('Pages active') + paginas('Pages wired down') + paginas('Pages occupied by compressor')) * pagina;
+  return usada > 0 ? Math.min(usada, os.totalmem()) : null;
+}
+function ramUsada(ahora = Date.now()) {
+  if (process.platform !== 'darwin') return os.totalmem() - os.freemem();
+  if (!ramMac) {
+    // La primera vez, de una: sin ella, la primera muestra saldría con el 99 % falso.
+    try { const u = leerVmStat(execFileSync('vm_stat', { encoding: 'utf8', timeout: 3000 })); if (u) ramMac = { usada: u, t: ahora }; } catch (e) { /* sin vm_stat */ }
+  } else if (ahora - ramMac.t >= RAM_MAC_MS && !leyendoRam) {
+    leyendoRam = true;
+    execFile('vm_stat', { encoding: 'utf8', timeout: 3000 }, (err, salida) => {
+      leyendoRam = false;
+      const u = err ? null : leerVmStat(salida);
+      if (u) ramMac = { usada: u, t: Date.now() };
+    });
+  }
+  return ramMac ? ramMac.usada : os.totalmem() - os.freemem();
+}
 
 const UMBRAL = { ram: 85, ramSeg: 10, cpu: 90, cpuSeg: 30, critico: 95 };
 const HISTORIA_MS = 5 * 60 * 1000;
@@ -48,7 +76,7 @@ function medirTotales(ahora = Date.now(), conGpu = true) {
   const t = sumarTiempos();
   const cpu = tiemposAntes && t.total > tiemposAntes.total ? (100 * (t.ocupado - tiemposAntes.ocupado)) / (t.total - tiemposAntes.total) : null;
   tiemposAntes = t;
-  const ram = (100 * (os.totalmem() - os.freemem())) / os.totalmem();
+  const ram = (100 * ramUsada(ahora)) / os.totalmem();
   if (conGpu) leerGpu(ahora);
   const g = conGpu ? gpu : null;
   if (cpu != null) {
@@ -92,8 +120,8 @@ function cpuMedia(seg) {
 function totales() {
   const u = historia[historia.length - 1];
   return {
-    cpu: u ? u[1] : null, ram: u ? u[2] : Math.round((100 * (os.totalmem() - os.freemem())) / os.totalmem()),
-    ramUsadaGB: (os.totalmem() - os.freemem()) / 2 ** 30, ramTotalGB: os.totalmem() / 2 ** 30, nucleos: os.cpus().length,
+    cpu: u ? u[1] : null, ram: u ? u[2] : Math.round((100 * ramUsada()) / os.totalmem()),
+    ramUsadaGB: ramUsada() / 2 ** 30, ramTotalGB: os.totalmem() / 2 ** 30, nucleos: os.cpus().length,
     gpu, historiaGpu: historiaGpu.slice(), historia: historia.slice(), alerta, umbral: UMBRAL
   };
 }
@@ -457,4 +485,4 @@ async function calculoVivo(sessionIds) {
   return m;
 }
 
-module.exports = { APLICACIONES, UUID, medirTotales, totales, cpuMedia, foto, agrupar, costoPropio, configurar, cerrarArbol, calculoVivo, pidPs: () => (ps ? ps.pid : 0), parar: pararPs };
+module.exports = { leerVmStat, APLICACIONES, UUID, medirTotales, totales, cpuMedia, foto, agrupar, costoPropio, configurar, cerrarArbol, calculoVivo, pidPs: () => (ps ? ps.pid : 0), parar: pararPs };

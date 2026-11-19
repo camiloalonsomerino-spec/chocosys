@@ -608,9 +608,24 @@ const pendientes = [];
 let vivasAlConectar = [];
 let conectando = false;
 
+// macOS y Linux: sin el node del sistema no hay dueño de terminales (ver lanzarTerminales). Se avisa en la terminal de la
+// sesión en vez de reintentar callado.
+let faltaNode = false;
+const AVISO_SIN_NODE = '\r\n\x1b[33mEn macOS y Linux, las terminales de Chocosys necesitan Node.js (nodejs.org o Homebrew). Instálalo y vuelve a abrir Chocosys.\x1b[0m\r\n';
+function avisarSinNode(m) {
+  if (!m || m.tipo !== 'abrir') return;
+  // Después de que la sesión registró su proceso (aTerminales va antes de procesos.set).
+  setImmediate(() => {
+    datosPty(m.id, AVISO_SIN_NODE);
+    const p = procesos.get(m.id);
+    if (p) p.alSalir({ exitCode: -1 });
+  });
+}
+
 // Si el dueño de terminales murió, la próxima orden lo lanza de nuevo.
 function aTerminales(m) {
   if (tubo) { tubo.write(JSON.stringify(m) + '\n'); return; }
+  if (faltaNode) { avisarSinNode(m); return; }
   pendientes.push(m);
   if (!conectando) conectarTerminales();
 }
@@ -627,9 +642,28 @@ function terminalRemota(id) {
   };
 }
 
+// Windows: el binario de Chocosys como Node (ELECTRON_RUN_AS_NODE), como siempre. macOS y Linux (17-11-2026): el node del
+// sistema (el mismo de los hooks, la línea de estado y el MCP), para que el armado apague el fusible RunAsNode: con él
+// prendido, otro programa del mismo usuario podía correr código como Chocosys y usar los permisos de privacidad que se le
+// dieron. terminales.js carga node-pty desde app.asar.unpacked (N-API: sirve con Electron y con Node). Devuelve false sin node.
 function lanzarTerminales() {
-  const h = spawn(process.execPath, [deFuera('terminales.js'), TUBO], {
-    detached: true, stdio: 'ignore', windowsHide: true, cwd: deFuera(), env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' })
+  const env = Object.assign({}, process.env);
+  let exe = process.execPath;
+  if (plataforma.esWin) env.ELECTRON_RUN_AS_NODE = '1';
+  else {
+    delete env.ELECTRON_RUN_AS_NODE;
+    exe = buscar('node');
+    if (!exe) { faltaNode = true; registrar('sin node: no arranca el dueño de terminales'); return false; }
+    // Un .dmg bajado deja com.apple.quarantine en cada archivo. Aprobar la app en Gatekeeper deja abrir Chocosys, pero el
+    // node del sistema no es Chocosys: al cargar pty.node macOS lo bloquea («no se puede abrir porque Apple no puede revisar
+    // si contiene software malicioso») y la sesión no abre (17-11-2026). Esto corre solo si Chocosys ya abrió, es decir,
+    // ya aprobada: se le quita la cuarentena a su propia carpeta app.asar.unpacked (la firma no cubre ese atributo).
+    if (app.isPackaged && plataforma.esMac) {
+      try { require('child_process').execFileSync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', deFuera()], { timeout: 10000, stdio: 'ignore' }); } catch (e) { registrar('no se pudo quitar la cuarentena', e.message); }
+    }
+  }
+  const h = spawn(exe, [deFuera('terminales.js'), TUBO], {
+    detached: true, stdio: 'ignore', windowsHide: true, cwd: deFuera(), env
   });
   // Si no arranca (una ruta que no existe, por ejemplo), se anota y la consola sigue: sin esto, el error la cerraba.
   h.on('error', (e) => registrar('no arrancó el dueño de terminales', e.message));
@@ -675,7 +709,11 @@ function conectarTerminales() {
       });
       sock.on('error', () => {
         if (tubo === sock) return;
-        if (intentos++ === 0) lanzarTerminales();
+        if (intentos++ === 0 && lanzarTerminales() === false) {
+          for (const p of pendientes.splice(0)) avisarSinNode(p);
+          resolver(0);
+          return;
+        }
         if (intentos < 60) setTimeout(intentar, 250);
         else { registrar('sin dueño de terminales'); resolver(0); }
       });
@@ -2961,6 +2999,8 @@ ipcMain.handle('reporte:previa', (e, d) => {
   const registro = d && d.conRegistro && fs.existsSync(archivo) ? fs.readFileSync(archivo, 'utf8').trim().split(/\r?\n/).slice(-40).join('\n') : '';
   return reporte.armar({
     version: app.getVersion(), electron: process.versions.electron, windows: require('os').release(),
+    // En macOS, la versión del sistema (15.1) y no la de Darwin que da os.release() (24.1.0).
+    sistema: plataforma.esMac ? 'macOS ' + process.getSystemVersion() : undefined,
     capturas: d && d.conCaptura && capturaReporte ? 1 : 0, paso: d && d.paso, esperaba: d && d.esperaba, pasos: d && d.pasos, registro
   });
 });
@@ -3086,6 +3126,8 @@ ipcMain.handle('recursos:detalle', async () => resumenRecursos(await detalleRecu
 
 app.whenReady().then(async () => {
   if (!esLaPrimera) return;
+  // Sin LANG desde el Dock: lo heredan el dueño de las terminales y cada sesión (plataforma.completarIdioma).
+  if (plataforma.esMac) registrar('idioma', plataforma.completarIdioma(app.getSystemLocale()));
   fs.mkdirSync(DATOS, { recursive: true });
   await cerrarHuerfanas(await conectarTerminales());
   claudeExe = buscar('claude');
